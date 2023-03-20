@@ -21,7 +21,7 @@ from celery import shared_task
 
 from .models import ExportedFile
 
-from .signals import export_success
+from .signals import export_failure, export_success
 
 
 def get_rest_request(user, rest_context):
@@ -67,6 +67,10 @@ class BackgroundSerializationTask(LoggedTask):
         exported_file = self.get_exported_file(args[0])
         export_success.send(sender=self.__class__, exported_file=exported_file)
 
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        super().on_failure(exc, task_id, args, kwargs, einfo)
+        export_failure.send(sender=self.__class__, exception=exc)
+
 
 @shared_task(base=BackgroundSerializationTask,
              name='background_export.serializer.serialization',
@@ -82,15 +86,30 @@ def background_serialization(self, exported_file_pk, rest_context, language, req
 
     prev_language = translation.get_language()
     translation.activate(language)
+
     try:
         exported_file = self.get_exported_file(exported_file_pk)
-        exported_file.file.save(filename, ContentFile(''))
         request = get_rest_request(exported_file.created_by, rest_context)
-        if settings.BACKGROUND_EXPORT_TASK_UPDATE_REQUEST_FUNCTION:
-            request = import_string(settings.BACKGROUND_EXPORT_TASK_UPDATE_REQUEST_FUNCTION)(request)
         query = string_to_obj(query)
+
         queryset = query.model.objects.all()
         queryset.query = query
+
+        # Prepare request.
+        if settings.BACKGROUND_EXPORT_TASK_UPDATE_REQUEST_FUNCTION:
+            request = import_string(settings.BACKGROUND_EXPORT_TASK_UPDATE_REQUEST_FUNCTION)(request)
+
+        # Perform user-defined verification before saving exported file into the database.
+        if settings.BACKGROUND_EXPORT_TASK_CALLBACK:
+            import_string(settings.BACKGROUND_EXPORT_TASK_CALLBACK)(
+                request=request,
+                queryset=queryset,
+                filename=filename,
+                exported_file=exported_file,
+            )
+
+        exported_file.file.save(filename, ContentFile(''))
+
         FileBackgroundExportGenerator(query.model).generate(
             exported_file, request, queryset, RFS.create_from_string(requested_fieldset), serialization_format
         )

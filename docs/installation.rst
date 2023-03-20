@@ -24,7 +24,7 @@ Libraries
  * **django-block-snippets** - library providing block snippets of html code for easier development webpages with ajax. You can find it here https://github.com/druids/django-block-snippets
  * **django-chamber** - several helpers removing code duplication. You can find it here https://github.com/druids/django-chamber
 
-All optional libraries is not instaled automatically. Other libraries are dependecies of django-is-core.
+All optional libraries are not installed automatically. Other libraries are dependencies of django-is-core.
 
 Using Pip
 ---------
@@ -203,6 +203,18 @@ These configuration you can use with django-is-core in your django settings file
         request.user = request.user.subclass
         return request
 
+
+.. attribute:: IS_CORE_BACKGROUND_EXPORT_TASK_CALLBACK
+
+  The path to the function which will be called before export task execution.
+
+    # Django settings
+    IS_CORE_BACKGROUND_EXPORT_TASK_CALLBACK = 'your.file.perform_action_before_export_task'
+
+    # your/file.py
+    def perform_action_before_export_task(request, queryset, filename, **kwargs):
+        logger.info(f"Exporting result of the query ({queryset.query}) into the file '{filename}'.")
+
 .. attribute:: IS_CORE_BACKGROUND_EXPORT_TASK_QUEUE
 
   The celery queue name which will be used for the background export.
@@ -221,7 +233,4 @@ These configuration you can use with django-is-core in your django settings file
 
 .. attribute:: IS_CORE_COLUMN_MANAGER
 
-  Allow administration column manager (table columns can be hidden with this function). The defalut value is ``False``.
-
-
-
+  Allow administration column manager (table columns can be hidden with this function). The default value is ``False``.
