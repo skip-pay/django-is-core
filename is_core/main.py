@@ -29,6 +29,7 @@ from is_core.menu import LinkMenuItem
 from is_core.loading import register_core
 from is_core.rest.factory import modelrest_factory
 from is_core.forms.models import SmartModelForm
+from is_core.utils.compatibility import get_last_parent_pk_field_name
 from is_core.utils.decorators import short_description
 
 from .auth.permissions import PermissionsSet, IsAdminUser
@@ -226,7 +227,13 @@ class DjangoCore(ModelCore):
         return get_model_name(self.model)
 
     def get_default_ordering(self):
-        return self.default_ordering if self.default_ordering is not None else (self.model._meta.ordering or ('pk',))
+        ordering = self.default_ordering if self.default_ordering is not None else self.model._meta.ordering
+        # Adding pk reduces the error when ordering by the same values.
+        pk_field_name = get_last_parent_pk_field_name(self.model)
+        if pk_field_name in [field.lstrip("-") for field in ordering]:
+            return ordering
+        else:
+            return tuple(ordering) + (pk_field_name,)
 
     def preload_queryset(self, request, qs):
         return qs
