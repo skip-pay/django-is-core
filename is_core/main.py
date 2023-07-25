@@ -232,7 +232,8 @@ class DjangoCore(ModelCore):
         return qs
 
     def get_queryset(self, request):
-        return self.model._default_manager.get_queryset().order_by(*self.get_default_ordering())
+        # Add PK to make ordering deterministic
+        return self.model._default_manager.get_queryset().order_by(*self.get_default_ordering(), 'pk')
 
 
 class UiCore(Core):
