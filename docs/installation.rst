@@ -215,6 +215,15 @@ These configuration you can use with django-is-core in your django settings file
     def perform_action_before_export_task(request, queryset, filename, **kwargs):
         logger.info(f"Exporting result of the query ({queryset.query}) into the file '{filename}'.")
 
+.. attribute:: IS_CORE_BACKGROUND_EXPORT_TASK_CALLBACK_HANDLED_EXCEPTIONS
+
+  A list of exceptions declared as explicitly handled by the library user that may occur during
+  the background export callback call. These exceptions do abort background export and trigger export_failed signal.
+  However, the background export task finishes successfully without a failure.
+
+    # Django settings
+    IS_CORE_BACKGROUND_EXPORT_TASK_CALLBACK_HANDLED_EXCEPTIONS = ('your.file.Exception1', 'your.file.Exception2')
+
 .. attribute:: IS_CORE_BACKGROUND_EXPORT_TASK_QUEUE
 
   The celery queue name which will be used for the background export.
