@@ -1,4 +1,5 @@
 from django.forms.formsets import DEFAULT_MIN_NUM, DEFAULT_MAX_NUM, BaseFormSet as OriginBaseFormSet
+from django.forms.renderers import get_default_renderer
 
 
 class BaseFormSetMixin:
@@ -59,6 +60,7 @@ def smartformset_factory(form, formset=BaseFormSet, extra=1, can_order=False, ca
         'max_num': max_num,
         'absolute_max': absolute_max,
         'validate_min': validate_min,
-        'validate_max': validate_max
+        'validate_max': validate_max,
+        'renderer': get_default_renderer(),
     }
     return type(form.__name__ + 'FormSet', (formset,), attrs)

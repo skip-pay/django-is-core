@@ -1,5 +1,5 @@
 from django.forms.formsets import DELETION_FIELD_NAME
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
 
 from chamber.utils.forms import formset_has_file_field

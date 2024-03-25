@@ -3,8 +3,8 @@ from functools import wraps
 from django.conf import settings as django_settings
 from django.http.response import Http404
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext
-from django.utils.encoding import force_text
+from django.utils.translation import gettext
+from django.utils.encoding import force_str
 from django.urls import NoReverseMatch
 
 from pyston.conf import settings as pyston_settings
@@ -399,7 +399,7 @@ class DjangoCoreResource(ModelCoreResourceMixin, SmartFormDjangoResource):
         BULK_CHANGE_LIMIT = getattr(django_settings, 'BULK_CHANGE_LIMIT', 200)
         if qs.count() > BULK_CHANGE_LIMIT:
             return RestErrorResponse(
-                msg=ugettext('Only %s objects can be changed by one request').format(BULK_CHANGE_LIMIT),
+                msg=gettext('Only %s objects can be changed by one request').format(BULK_CHANGE_LIMIT),
                 code=413)
 
         data = self.get_dict_data()
@@ -426,6 +426,6 @@ class DjangoCoreResource(ModelCoreResourceMixin, SmartFormDjangoResource):
     def _format_message(self, obj, ex):
         return {
             'id': obj.pk,
-            'errors': {k: mark_safe(force_text(v)) for k, v in ex.errors.items()} if hasattr(ex, 'errors') else {},
-            '_obj_name': force_text(obj),
+            'errors': {k: mark_safe(force_str(v)) for k, v in ex.errors.items()} if hasattr(ex, 'errors') else {},
+            '_obj_name': force_str(obj),
         }

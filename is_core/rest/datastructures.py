@@ -1,4 +1,4 @@
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from pyston.utils import RestFieldset, RestField
 
@@ -67,7 +67,7 @@ class ModelFlatRestFields(ModelFlatRestFieldsMixin):
         self.fields = fields
 
     def __str__(self):
-        return ','.join(map(force_text, self.fields))
+        return ','.join(map(force_str, self.fields))
 
 
 class ModelRestFieldset(RestFieldset, ModelFlatRestFieldsMixin):

@@ -6,11 +6,11 @@ from django.db.models.base import Model
 from django.db.models.fields.files import FieldFile
 from django.forms.utils import flatatt
 from django.forms.widgets import MultiWidget, TextInput, Widget
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 from django.utils.html import conditional_escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from is_core.config import settings
 from is_core.utils import EMPTY_VALUE, display_json
@@ -204,7 +204,7 @@ class ModelChoiceReadonlyWidget(ModelObjectReadonlyWidget):
         if request and self._get_widget():
             choice = self._choice(value)
             if choice:
-                rendered_value = self._render_object(request, choice.obj, force_text(choice[1]))
+                rendered_value = self._render_object(request, choice.obj, force_str(choice[1]))
             elif value in EMPTY_VALUES:
                 rendered_value = EMPTY_VALUE
 
@@ -221,7 +221,7 @@ class ModelMultipleReadonlyWidget(ModelChoiceReadonlyWidget):
             for value_item in value:
                 choice = self._choice(value_item)
                 if choice:
-                    value_item = force_text(choice[1])
+                    value_item = force_str(choice[1])
                     if choice.obj:
                         rendered_values.append(self._render_object(request, choice.obj, value_item))
                     else:
@@ -292,7 +292,7 @@ class MultipleTextInput(forms.TextInput):
         if isinstance(value, str):
             value = [value]
         return super().render(
-            name, '{} '.format(self.separator).join(map(force_text, value)) if value else value, attrs, renderer
+            name, '{} '.format(self.separator).join(map(force_str, value)) if value else value, attrs, renderer
         )
 
     def value_from_datadict(self, data, files, name):

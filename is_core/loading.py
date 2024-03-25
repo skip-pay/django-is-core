@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from importlib import import_module
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.apps import apps
 
 
@@ -33,7 +33,7 @@ class CoresLoader:
             try:
                 import_module('{}.cores'.format(app.name))
             except ImportError as ex:
-                if force_text(ex) != 'No module named \'{}.cores\''.format(app.name):
+                if force_str(ex) != 'No module named \'{}.cores\''.format(app.name):
                     raise ex
 
     def get_cores(self):

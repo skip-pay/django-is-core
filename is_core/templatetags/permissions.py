@@ -1,5 +1,5 @@
 from django.template.base import Node, TemplateSyntaxError, NodeList, kwarg_re
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import SimpleLazyObject
 from django.template import Library
 
@@ -86,7 +86,7 @@ class PermissionURLNode(Node):
         pattern_name = self.pattern_name.resolve(context, True)
         request = context.get('request')
         kwargs = {
-            force_text(k, 'ascii'): v.resolve(context)
+            force_str(k, 'ascii'): v.resolve(context)
             for k, v in self.kwargs.items()
         }
 

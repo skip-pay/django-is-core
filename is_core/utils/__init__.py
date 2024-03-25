@@ -8,7 +8,7 @@ from django.contrib.admin.utils import display_for_value as admin_display_for_va
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import QuerySet
 from django.core.exceptions import FieldDoesNotExist
-from django.utils.translation import ugettext
+from django.utils.translation import gettext
 from django.utils.html import format_html, format_html_join
 from django.utils.formats import get_format, date_format
 from django.utils.timezone import template_localtime
@@ -287,7 +287,7 @@ def display_for_value(value, request=None):
             )
         )
     elif isinstance(value, bool):
-        return ugettext('Yes') if value else ugettext('No')
+        return gettext('Yes') if value else gettext('No')
     elif isinstance(value, datetime.datetime):
         return date_format(template_localtime(value), (
              'DATETIME_FORMAT' if get_format('IS_CORE_VIEW_DATETIME_FORMAT') == 'IS_CORE_VIEW_DATETIME_FORMAT'
@@ -333,7 +333,7 @@ def get_obj_url(request, obj):
 
 def render_model_object_with_link(request, obj, display_value=None):
     if obj is None:
-        return '[{}]'.format(ugettext('missing object'))
+        return '[{}]'.format(gettext('missing object'))
 
     obj_url = get_obj_url(request, obj)
     display_value = str(obj) if display_value is None else str(display_value)

@@ -1,4 +1,4 @@
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from is_core.auth.permissions import PermissionsSet, CoreCreateAllowed, CoreAllowed, DEFAULT_PERMISSION
 

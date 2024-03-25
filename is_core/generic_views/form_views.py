@@ -2,8 +2,8 @@ from copy import deepcopy
 
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http.response import HttpResponseRedirect, Http404
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _
 from django.views.generic.edit import FormView
 from django.contrib.messages.api import get_messages, add_message
 from django.contrib.messages import constants
@@ -79,7 +79,7 @@ class BaseFormView(GetMethodFieldMixin, DefaultModelCoreViewMixin, FormView):
         return () if self.readonly_fields is None else self.readonly_fields
 
     def get_message_kwargs(self, obj):
-        return {'obj': force_text(obj)}
+        return {'obj': force_str(obj)}
 
     def get_message(self, msg_type_or_level, obj=None):
         msg_kwargs = {}
@@ -124,7 +124,7 @@ class BaseFormView(GetMethodFieldMixin, DefaultModelCoreViewMixin, FormView):
                 obj = self.save_form(form, **kwargs)
             return self.success_render_to_response(obj, msg, msg_level)
         except ValidationError as ex:
-            return self.form_invalid(form, msg=force_text(ex.message), **kwargs)
+            return self.form_invalid(form, msg=force_str(ex.message), **kwargs)
 
     def form_invalid(self, form, msg=None, msg_level=None, **kwargs):
         msg_level = msg_level or constants.ERROR
@@ -133,7 +133,7 @@ class BaseFormView(GetMethodFieldMixin, DefaultModelCoreViewMixin, FormView):
         return self.render_to_response(self.get_context_data(form=form, msg=msg, msg_level=msg_level, **kwargs))
 
     def get_popup_obj(self, obj):
-        return {'_obj_name': force_text(obj)}
+        return {'_obj_name': force_str(obj)}
 
     @property
     def is_ajax_form(self):
@@ -269,7 +269,7 @@ class BaseFormView(GetMethodFieldMixin, DefaultModelCoreViewMixin, FormView):
             extra_content = response_kwargs['extra_content'] = response_kwargs.get('extra_content', {})
             extra_content_messages = {}
             for message in get_messages(self.request):
-                extra_content_messages[message.tags] = force_text(message)
+                extra_content_messages[message.tags] = force_str(message)
             if extra_content_messages:
                 extra_content['messages'] = extra_content_messages
         return super().render_to_response(context, **response_kwargs)
@@ -301,7 +301,7 @@ class DjangoBaseFormView(FieldPermissionViewMixin, BaseFormView):
         return form_field
 
     def get_message_kwargs(self, obj):
-        return {'obj': force_text(obj), 'name': force_text(obj._meta.verbose_name)}
+        return {'obj': force_str(obj), 'name': force_str(obj._meta.verbose_name)}
 
     def get_exclude(self):
         return self.exclude
@@ -512,7 +512,7 @@ class DjangoBaseFormView(FieldPermissionViewMixin, BaseFormView):
     def get_popup_obj(self, obj):
         app_label = self.model._meta.app_label
         model_name = self.model._meta.object_name
-        return {'_obj_name': force_text(obj), 'pk': obj.pk, '_model': '%s.%s' % (app_label, model_name)}
+        return {'_obj_name': force_str(obj), 'pk': obj.pk, '_model': '%s.%s' % (app_label, model_name)}
 
 
 class DjangoCoreFormView(ListParentMixin, DjangoBaseFormView):
