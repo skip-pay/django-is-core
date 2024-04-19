@@ -2,8 +2,8 @@ import mimeparse
 
 from django.http.response import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _
 
 import import_string
 
@@ -47,10 +47,10 @@ def ui_response_exception_factory(request, response_code, title, message, respon
 def rest_response_exception_factory(request, response_code, title, message, response_class=HttpResponse,
                                     rest_error_response_class=None):
     message = (
-        ', '.join([force_text(val) for val in message])
+        ', '.join([force_str(val) for val in message])
         if isinstance(message, (list, tuple))
-        else force_text(message)
-    ) if message else force_text(title)
+        else force_str(message)
+    ) if message else force_str(title)
     set_rest_context_to_request(request, BaseResource.DEFAULT_REST_CONTEXT_MAPPING)
     converter_name = get_converter_name_from_request(request)
     converter = get_converter(converter_name)

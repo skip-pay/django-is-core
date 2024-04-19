@@ -11,7 +11,7 @@ from django.db import models
 from django.shortcuts import resolve_url
 from django.utils import timezone
 from django.utils.html import format_html
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from is_core.config import settings as is_core_settings
 from is_core.utils.decorators import short_description

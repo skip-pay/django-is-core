@@ -1,5 +1,5 @@
 import django
-from django.conf.urls import include, url
+from django.urls import include, re_path as url
 from django.conf import settings
 
 from is_core.site import site

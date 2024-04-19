@@ -1,8 +1,8 @@
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import render
 from django.utils import translation
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext
+from django.utils.encoding import force_str
+from django.utils.translation import gettext
 
 from is_core.rest.resource import CoreResource, DjangoCoreResource
 
@@ -16,7 +16,7 @@ class ErrorResponseData(dict):
 
     def __init__(self, msg, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self['messages'] = {'error': force_text(msg)}
+        self['messages'] = {'error': force_str(msg)}
 
 
 def apply_background_export(user, queryset, rest_context, fieldset, serialization_format, filename):
@@ -43,12 +43,12 @@ class CeleryResourceMixin:
 
     def _get_error_response_data(self, message):
         return {
-            'messages': {'error': force_text(message)}
+            'messages': {'error': force_str(message)}
         }
 
     def _get_no_background_permissions_response_data(self, http_headers):
         return ErrorResponseData(
-            ugettext('User doesn\'t have permissions to export')
+            gettext('User doesn\'t have permissions to export')
         ), http_headers, 403, False
 
     def _serialize_data_in_background(self, result):
@@ -56,7 +56,7 @@ class CeleryResourceMixin:
             self.request.user,
             result,
             self.request._rest_context,
-            force_text(self._get_requested_fieldset(result)),
+            force_str(self._get_requested_fieldset(result)),
             self._get_serialization_format(),
             self._get_filename(),
         )
@@ -94,7 +94,7 @@ class CeleryResourceMixin:
 
     def _get_name(self):
         obj = self._get_obj_or_none(pk=self.kwargs.get('pk'))
-        return force_text(obj).replace(' ', '-') if obj else super()._get_name()
+        return force_str(obj).replace(' ', '-') if obj else super()._get_name()
 
 
 class CeleryDjangoCoreResource(CeleryResourceMixin, DjangoCoreResource):

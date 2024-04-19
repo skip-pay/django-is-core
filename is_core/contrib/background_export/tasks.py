@@ -95,6 +95,7 @@ def background_serialization(self, exported_file_pk, rest_context, language, req
             request = import_string(settings.BACKGROUND_EXPORT_TASK_UPDATE_REQUEST_FUNCTION)(request)
 
         # Perform user-defined verification before saving exported file into the database.
+        bg_excs = tuple(import_string(exc) for exc in settings.BACKGROUND_EXPORT_TASK_CALLBACK_HANDLED_EXCEPTIONS)
         if settings.BACKGROUND_EXPORT_TASK_CALLBACK:
             try:
                 import_string(settings.BACKGROUND_EXPORT_TASK_CALLBACK)(
@@ -103,7 +104,7 @@ def background_serialization(self, exported_file_pk, rest_context, language, req
                     filename=filename,
                     exported_file=exported_file,
                 )
-            except tuple(import_string(exc) for exc in settings.BACKGROUND_EXPORT_TASK_CALLBACK_HANDLED_EXCEPTIONS) as exc:
+            except bg_excs as exc:
                 export_failure.send(sender=self.__class__, exception=exc)
                 return
 

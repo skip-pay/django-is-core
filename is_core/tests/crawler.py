@@ -1,6 +1,6 @@
 import json
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from germanium.tools import assert_true, assert_not_equal
 from germanium.decorators import login
@@ -112,7 +112,7 @@ class CrawlerTestCase:
 
         def post_response(url, referer, resp, exception):
             tested_urls.append(url)
-            assert_true(exception is None, msg='Received exception %s, url %s' % (force_text(exception), url))
+            assert_true(exception is None, msg='Received exception %s, url %s' % (force_str(exception), url))
             if resp.status_code != 200:
                 failed_urls.append(url)
                 self.logger.warning('Response code for url %s from referer %s should be 200 but code is %s, user %s' %
