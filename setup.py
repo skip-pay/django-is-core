@@ -35,9 +35,9 @@ setup(
     install_requires=[
         'django>=4.2',
         'import_string>=0.1.0',
-        'skip-django-block-snippets @ git+https://github.com/skip-pay/django-block-snippets@tda/chore/django_bump',
-        'skip-django-chamber @ git+https://github.com/skip-pay/django-chamber@tda/chore/django_bump',
-        'skip-django-pyston @ git+https://github.com/skip-pay/django-pyston@tda/chore/django_bump',
+        'skip-django-block-snippets>=2.1.0',
+        'skip-django-chamber>=0.7.2',
+        'skip-django-pyston>=2.17.0',
         'python-dateutil>=2.8.1',
         'pytz',
         'Unidecode',
