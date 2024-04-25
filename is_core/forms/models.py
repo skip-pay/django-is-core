@@ -214,7 +214,7 @@ class SmartModelForm(SmartFormMixin, RestModelForm, metaclass=SmartModelFormMeta
         for f in self.instance._meta.fields:
             field = f.name
             if field in self.readonly_fields and field not in exclude:
-                exclude.append(field)
+                exclude.add(field)
         return exclude
 
 
