@@ -80,9 +80,7 @@ class AndPermission(OperatorPermission):
 
     def __and__(self, other):
         assert isinstance(other, BasePermission), 'Only permission instances can be joined'
-
-        self.add(other)
-        return self
+        return AndPermission(self, other)
 
 
 class OrPermission(OperatorPermission):
