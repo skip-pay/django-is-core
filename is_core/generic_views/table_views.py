@@ -8,7 +8,7 @@ from is_core.generic_views.base import DefaultModelCoreViewMixin
 from is_core.rest.filters import UIFilterMixin, FilterChoiceIterator
 from is_core.rest.datastructures import ModelFlatRestFields, ModelRestFieldset
 from is_core.utils import (
-    pretty_class_name, get_export_types_with_content_type, LOOKUP_SEP, get_field_label_from_path
+    pretty_class_name, get_export_types_with_content_type, LOOKUP_SEP, get_field_label_from_path, get_model_name
 )
 
 from chamber.utils.http import query_string_from_dict
@@ -363,12 +363,23 @@ class BaseModelTableView(DefaultModelCoreViewMixin, BaseModelTableViewMixin, Tem
         return context_data
 
     def get_bulk_change_snippet_name(self):
-        return '-'.join(('default', self.core.menu_group, 'form'))
+        try:
+            snippet_model_name = get_model_name(self.model)
+        except Exception:
+            snippet_model_name = self.core.menu_group
+
+        return "-".join(("default", snippet_model_name, "form"))
 
     def get_bulk_change_form_url(self):
+        try:
+            snippet_model_name = get_model_name(self.model)
+        except Exception:
+            snippet_model_name = self.core.menu_group
+
         return (
-            reverse(''.join(('IS:', self.core.get_bulk_change_url_name(), '-', self.core.menu_group)))
-            if self.is_bulk_change_enabled() else None
+            reverse("".join(("IS:", self.core.get_bulk_change_url_name(), "-", snippet_model_name)))
+            if self.is_bulk_change_enabled()
+            else None
         )
 
     def _get_menu_group_pattern_name(self):
