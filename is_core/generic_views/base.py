@@ -176,6 +176,15 @@ class DefaultModelCoreViewMixin(DefaultCoreViewMixin):
 
     @classmethod
     def __init_core__(cls, core, pattern):
+        try:
+            if cls.model != core.model:
+                from is_core.site import get_model_core
+
+                if model_core := get_model_core(cls.model):
+                    core = model_core
+        except Exception:
+            pass
+
         super().__init_core__(core, pattern)
         cls.model = cls.model or core.model
 
