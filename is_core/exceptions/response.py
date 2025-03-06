@@ -135,6 +135,12 @@ class HttpDuplicateResponseException(ResponseException):
     status_code = 409
 
 
+class HttpUnprocessableEntityResponseException(ResponseException):
+
+    title = _('Unprocessable entity')
+    status_code = 422
+
+
 class HttpServiceUnavailableException(ResponseException):
 
     title = _('Temporarily unavailable')

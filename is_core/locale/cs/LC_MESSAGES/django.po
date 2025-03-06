@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.4.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-12-30 16:55+0100\n"
+"POT-Creation-Date: 2025-03-06 09:51+0100\n"
 "PO-Revision-Date: 2016-01-14 15:22+0100\n"
 "Last-Translator: FULL NAME <matllubos@gmail.com>\n"
 "Language-Team: \n"
@@ -18,17 +18,17 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 "X-Generator: Poedit 1.8.1\n"
 
-#: actions.py:47 templates/is_core/forms/inline_table.html:89
+#: actions.py:50 templates/is_core/forms/inline_table.html:89
 #: templates/is_core/generic_views/base_table.html:128 utils/__init__.py:290
 msgid "Yes"
 msgstr "Ano"
 
-#: actions.py:48 templates/is_core/forms/inline_table.html:89
+#: actions.py:51 templates/is_core/forms/inline_table.html:89
 #: templates/is_core/generic_views/base_table.html:128 utils/__init__.py:290
 msgid "No"
 msgstr "Ne"
 
-#: actions.py:49 templates/is_core/forms/inline_table.html:89
+#: actions.py:52 templates/is_core/forms/inline_table.html:89
 #: templates/is_core/generic_views/base_table.html:128
 msgid "Are you sure?"
 msgstr "Jste si jisti?"
@@ -108,6 +108,10 @@ msgid "Conflict/Duplicate"
 msgstr "Konflikt/Duplikace"
 
 #: exceptions/response.py:140
+msgid "Unprocessable entity"
+msgstr "Nezpracovatelná entita"
+
+#: exceptions/response.py:146
 msgid "Temporarily unavailable"
 msgstr "Služba je dočasně nedostupná"
 
@@ -138,7 +142,7 @@ msgstr "Položka \"%(obj)s\" typu %(name)s byla úspěšně přidána."
 msgid "Please correct the error below."
 msgstr "Prosím opravte níže uvedené chyby."
 
-#: generic_views/base.py:203 main.py:373
+#: generic_views/base.py:203 main.py:374
 msgid "Home"
 msgstr "Home"
 
@@ -184,33 +188,29 @@ msgstr "Neukládat a vrátit se na seznam"
 msgid "There are no items"
 msgstr "Žádné položky"
 
-#: main.py:482
+#: main.py:483
 msgid "object name"
 msgstr ""
 
-#: main.py:611
+#: main.py:612
 #, python-format
 msgid "Do you really want to delete \"%s\""
 msgstr "Opravdu chcete odstranit položku \"%s\""
 
-#: main.py:613
+#: main.py:614
 msgid "Delete"
 msgstr "Smazat"
 
-#: main.py:614
+#: main.py:615
 #, python-format
 msgid "Record \"%s\" was deleted"
 msgstr "Záznam \"%s\" byl smazán"
 
-#: main.py:718
+#: main.py:719
 msgid "Detail"
 msgstr "Detail"
 
-#: middleware.py:33
-msgid "Unprocessable Entity"
-msgstr "Nezpracovatelná entita"
-
-#: middleware.py:35
+#: middleware.py:32
 msgid "Not Found"
 msgstr "Nenalezeno"
 
@@ -319,13 +319,13 @@ msgstr "Znovu načíst data a zobrazit celkový počet řádků"
 #: templates/is_core/generic_views/base_table.html:109
 #, python-format
 msgid ""
-"There are some filters on hidden fields: <span class=\"columns\">"
-"%(columns)s</span>. Do you want to <span class=\"delete-filtering\">delete "
-"filtering</span>?"
+"There are some filters on hidden fields: <span "
+"class=\"columns\">%(columns)s</span>. Do you want to <span class=\"delete-"
+"filtering\">delete filtering</span>?"
 msgstr ""
-"Na skryté sloupce jsou aplikovány filtry: <span class=\"columns\">"
-"%(columns)s</span>. Opravdu chcete <span class=\"delete-filtering"
-"\">odstranit filtrování </span>?"
+"Na skryté sloupce jsou aplikovány filtry: <span "
+"class=\"columns\">%(columns)s</span>. Opravdu chcete <span class=\"delete-"
+"filtering\">odstranit filtrování </span>?"
 
 #: templates/is_core/forms/inline_table.html:89
 #: templates/is_core/generic_views/base_table.html:128
@@ -383,11 +383,11 @@ msgstr "Přihlásit se"
 msgid "Please Sign In"
 msgstr "Prosím přihlaste se"
 
-#: templates/is_core/login.html:17
+#: templates/is_core/login.html:18
 msgid "Fill your credentials"
 msgstr "Vyplňte své přihlašovací údaje"
 
-#: templates/is_core/login.html:21
+#: templates/is_core/login.html:24
 msgid "OR"
 msgstr "NEBO"
 
