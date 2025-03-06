@@ -1,5 +1,4 @@
 from django.http.response import Http404
-from django.core.exceptions import ValidationError
 from django.utils.encoding import force_str
 from django.utils.translation import gettext
 from django.urls import resolve, Resolver404
@@ -29,7 +28,5 @@ class HttpExceptionsMiddleware(MiddlewareMixin):
     def process_exception(self, request, exception):
         if isinstance(exception, ResponseException):
             return exception.get_response(request)
-        if isinstance(exception, ValidationError):
-            return response_exception_factory(request, 422, gettext('Unprocessable Entity'), exception.messages)
         if not settings.DEBUG and isinstance(exception, Http404):
             return response_exception_factory(request, 404, gettext('Not Found'), force_str(exception))
