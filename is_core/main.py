@@ -53,8 +53,10 @@ class CoreBase(type):
 
 class Core(metaclass=CoreBase):
     """
-    Parent of all IS cores. Contains common methods for all cores.
-    This class is abstract.
+    Base class for all IS cores. Contains common methods for all cores.
+
+    Provides URL pattern generation, permission handling, and menu group management.
+    Use this as a base for custom core implementations that don't work with models.
     """
 
     abstract = True
@@ -130,6 +132,12 @@ class Core(metaclass=CoreBase):
 
 
 class ModelCore(GetMethodFieldMixin, Core):
+    """
+    Base class for cores that work with models. Provides field management and queryset handling.
+
+    Defines methods for field configuration, ordering, and basic CRUD permissions.
+    Use this as a base for custom model-based cores that need field management without UI or REST.
+    """
 
     abstract = True
 
@@ -172,8 +180,10 @@ class ModelCore(GetMethodFieldMixin, Core):
 
 class DjangoCore(ModelCore):
     """
-    Parent of REST and UI cores that works as controller to specific model.
-    This class is abstract.
+    Django model controller that provides form handling and model lifecycle methods.
+
+    Handles form class selection, model saving/deleting operations, and verbose name management.
+    Use this as a base for cores that need Django model integration with form handling.
     """
 
     abstract = True
@@ -237,7 +247,12 @@ class DjangoCore(ModelCore):
 
 
 class UiCore(Core):
-    """Main core for UI views."""
+    """
+    Core for UI views. Provides HTML template rendering views and menu integration.
+
+    Handles view class registration, menu item generation, and URL pattern management for UI views.
+    Use this when you need only template rendering views without REST functionality.
+    """
 
     abstract = True
 
@@ -300,7 +315,12 @@ class UiCore(Core):
 
 
 class RestCore(Core):
-    """Main core for REST views."""
+    """
+    Core for REST views. Provides REST resources without HTML template rendering.
+
+    Handles REST resource registration, API URL generation, and REST pattern management.
+    Use this when you need only REST API functionality without UI views.
+    """
 
     rest_classes = ()
     default_rest_pattern_class = RestPattern
@@ -363,12 +383,23 @@ class UiRestCoreMixin:
 
 
 class UiRestCore(UiRestCoreMixin, UiCore, RestCore):
-    """UI REST Core, its main purpose is create custom REST resources and UI views."""
+    """
+    Combined UI and REST core. Provides both HTML template rendering and REST resources.
+
+    Combines UiCore and RestCore functionality for applications that need both UI and REST endpoints.
+    Use this when you need both UI views and REST API for custom functionality.
+    """
 
     abstract = True
 
 
 class HomeUiCore(UiCore):
+    """
+    Special core for home page functionality. Provides the main landing page view.
+
+    Creates the home/index view with custom URL routing. Automatically registered
+    unless overridden by settings. Provides the root URL ('/') navigation.
+    """
 
     menu_url_name = 'index'
     verbose_name_plural = _('Home')
@@ -388,6 +419,12 @@ class HomeUiCore(UiCore):
 
 
 class ModelUiCore(ModelCore, UiCore):
+    """
+    Model UI core base class. Combines model handling with UI view functionality.
+
+    Provides model-based UI views with fieldsets, inline views, and export capabilities.
+    Base class for cores that need both model management and UI views.
+    """
 
     abstract = True
 
@@ -486,7 +523,12 @@ class ModelUiCore(ModelCore, UiCore):
 
 
 class DjangoUiCore(DjangoCore, ModelUiCore):
-    """Main core controller for specific model that provides UI views for model management (add, edit, list)."""
+    """
+    Django model UI core. Provides default UI views (add, list, detail) for Django models.
+
+    Creates add, edit, and list views for Django models with form handling and template rendering.
+    Use this when you need only UI views for Django model management without REST API.
+    """
 
     abstract = True
 
@@ -497,8 +539,10 @@ class DjangoUiCore(DjangoCore, ModelUiCore):
 
 class ModelRestCore(RestCore, ModelCore):
     """
-    Main core controller for specific model that provides REST resources for model management.
-    CRUD (POST, GET, PUT, DELETE).
+    Model REST core. Provides REST resources for Django models without UI views.
+
+    Creates REST endpoints for model CRUD operations with filtering, pagination, and field management.
+    Use this when you need only REST API for Django model management without UI views.
     """
 
     abstract = True
@@ -641,7 +685,11 @@ class ModelRestCore(RestCore, ModelCore):
 class DjangoRestCore(ModelRestCore, DjangoCore):
     """
     Main core controller for specific model that provides REST resources for model management.
-    CRUD (POST, GET, PUT, DELETE).
+
+    Creates REST endpoints with full CRUD operations (POST, GET, PUT, DELETE), filtering, pagination,
+    and field management for Django models. Integrates with Django model metadata for automatic
+    field configuration.
+    Use this when you need only REST API for Django model management without UI views.
     """
 
     abstract = True
@@ -693,6 +741,12 @@ class DjangoRestCore(ModelRestCore, DjangoCore):
 
 
 class ModelUiRestCore(UiRestCoreMixin, ModelRestCore, ModelUiCore):
+    """
+    Model UI REST core base class. Combines model handling with both UI and REST functionality.
+
+    Provides model-based UI views and REST resources with integrated web links and actions.
+    Base class for cores that need model management through both UI and REST interfaces.
+    """
 
     abstract = True
 
@@ -749,8 +803,13 @@ class ModelUiRestCore(UiRestCoreMixin, ModelRestCore, ModelUiCore):
 
 class DjangoUiRestCore(DjangoRestCore, DjangoUiCore, ModelUiRestCore):
     """
-    Combination of UI views and REST resources. UI views uses REST resources for printing model data, filtering,
-    paging and so on.
+    The main and recommended core for Django model management. Provides complete interface with both UI views
+    and REST resources.
+
+    This is the default choice for most Django models. Creates a complete model management interface
+    with UI views (add, edit, list) and REST API endpoints. UI views use REST resources for data
+    operations, filtering, and pagination. Includes bulk operations and export functionality.
+    Use this for standard Django model management - it provides everything you need out of the box.
     """
 
     abstract = True
