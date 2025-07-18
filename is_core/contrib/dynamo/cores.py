@@ -9,6 +9,9 @@ from .views import DynamoDetailView, DynamoTableView
 
 
 class DynamoCore(ModelCore):
+    """
+    Base core for DynamoDB models. Provides queryset handling and object retrieval for DynamoDB documents.
+    """
 
     abstract = True
 
@@ -43,6 +46,9 @@ class DynamoCore(ModelCore):
 
 
 class DynamoUiCore(DynamoCore, ModelUiCore):
+    """
+    DynamoDB UI core. Provides UI views for DynamoDB documents with specialized table and detail views.
+    """
 
     abstract = True
 
@@ -51,6 +57,9 @@ class DynamoUiCore(DynamoCore, ModelUiCore):
 
 
 class DynamoRestCore(DynamoCore, ModelRestCore):
+    """
+    DynamoDB REST core. Provides REST resources for DynamoDB documents with cursor-based pagination.
+    """
 
     abstract = True
 
@@ -59,5 +68,8 @@ class DynamoRestCore(DynamoCore, ModelRestCore):
 
 
 class DynamoUiRestCore(DynamoUiCore, DynamoRestCore, ModelUiRestCore):
+    """
+    Combined DynamoDB UI and REST core. Provides both UI views and REST resources for DynamoDB documents.
+    """
 
     abstract = True

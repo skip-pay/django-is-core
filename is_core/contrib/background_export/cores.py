@@ -6,6 +6,9 @@ from .resource import CeleryDjangoCoreResource
 
 
 class BackgroundExportCoreMixin:
+    """
+    Mixin that adds background export functionality to cores.
+    """
 
     export_permission = IsSuperuser()
     rest_resource_class = CeleryDjangoCoreResource
@@ -20,11 +23,17 @@ class BackgroundExportCoreMixin:
 
 
 class DjangoBackgroundExportUiRestCore(BackgroundExportCoreMixin, DjangoUiRestCore):
+    """
+    Django core with background export functionality. Provides UI and REST with export capabilities.
+    """
 
     abstract = True
 
 
 class BaseExportedFileCore(DjangoBackgroundExportUiRestCore):
+    """
+    Base core for managing exported files
+    """
 
     abstract = True
     model = ExportedFile

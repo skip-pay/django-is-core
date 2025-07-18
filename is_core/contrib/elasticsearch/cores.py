@@ -7,6 +7,10 @@ from .views import ElasticsearchDetailView, ElasticsearchTableView
 
 
 class ElasticsearchCore(ModelCore):
+    """
+    Base core for Elasticsearch models. Provides queryset handling and menu group generation for Elasticsearch
+    documents.
+    """
 
     abstract = True
 
@@ -23,6 +27,9 @@ class ElasticsearchCore(ModelCore):
 
 
 class ElasticsearchUiCore(ElasticsearchCore, ModelUiCore):
+    """
+    Elasticsearch UI core. Provides UI views for Elasticsearch documents with specialized table and detail views.
+    """
 
     abstract = True
 
@@ -31,6 +38,10 @@ class ElasticsearchUiCore(ElasticsearchCore, ModelUiCore):
 
 
 class ElasticsearchRestCore(ElasticsearchCore, ModelRestCore):
+    """
+    Elasticsearch REST core. Provides REST resources for Elasticsearch documents with specialized pagination
+    and filtering.
+    """
 
     abstract = True
 
@@ -40,5 +51,8 @@ class ElasticsearchRestCore(ElasticsearchCore, ModelRestCore):
 
 
 class ElasticsearchUiRestCore(ElasticsearchRestCore, ElasticsearchUiCore, ModelUiRestCore):
+    """
+    Combined Elasticsearch UI and REST core. Provides both UI views and REST resources for Elasticsearch documents.
+    """
 
     abstract = True
