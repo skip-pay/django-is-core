@@ -220,6 +220,8 @@ These configuration you can use with django-is-core in your django settings file
     # Django settings
     IS_CORE_BACKGROUND_EXPORT_TASK_CALLBACK = 'your.file.perform_action_before_export_task'
 
+.. code-block:: python
+
     # your/file.py
     def perform_action_before_export_task(request, queryset, filename, **kwargs):
         logger.info(f"Exporting result of the query ({queryset.query}) into the file '{filename}'.")

@@ -19,7 +19,38 @@ import shlex
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
+
+# Mock imports for autodoc using Sphinx's built-in autodoc_mock_imports
+autodoc_mock_imports = [
+    'block_snippets',
+    'fperms_iscore',
+    'django_celery_extensions',
+]
+
+# Configure Django for autodoc
+import django
+from django.conf import settings
+
+if not settings.configured:
+    settings.configure(
+        DEBUG=True,
+        DATABASES={
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': ':memory:',
+            }
+        },
+        INSTALLED_APPS=[
+            'django.contrib.contenttypes',
+            'django.contrib.auth',
+            'is_core',
+        ],
+        SECRET_KEY='fake-key-for-docs',
+        USE_TZ=True,
+        MIDDLEWARE=[],
+    )
+    django.setup()
 
 # -- General configuration ------------------------------------------------
 

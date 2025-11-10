@@ -650,7 +650,7 @@ The result of form field labels will be:
 * 'leading_issue__name' => 'leading issues changed label - {generated value}'
 * 'solving_issue__name' => 'solving issue name label'
 * 'watching_issues' => 'watching issues changed label'
-* 'leading_issue' => '{generated value}'  # because overriden was value leading_issue__
+* 'leading_issue' => '{generated value}'  # because overriden was value leading_issue\_\_
 
 If you want to remove some label generated from relation prefix, you can use ``None`` as field label value::
 
@@ -934,11 +934,6 @@ settings inside ``RESTMeta`` but the result fields is intersection of ``RESTMeta
 .. attribute:: DjangoRestCore.rest_default_extra_fields
 
 The purpose of ``rest_default_extra_fields`` is the same as ``rest_extra_fields`` but this option does not rewrite
-settings inside ``RESTMeta`` but the result fields is intersection of ``RESTMeta`` options and this option.
-
-.. attribute:: DjangoRestCore.rest_default_guest_fields
-
-The purpose of ``rest_default_guest_fields`` is the same as ``rest_guest_fields`` but this option does not rewrite
 settings inside ``RESTMeta`` but the result fields is intersection of ``RESTMeta`` options and this option.
 
 .. attribute:: DjangoRestCore.rest_allowed_methods

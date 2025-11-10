@@ -1,5 +1,5 @@
 #
-# Run install_packages as root. 
+# Run install_packages as root.
 # Then run local_install from current directory (for local install + app build).
 #
 
@@ -28,7 +28,7 @@ test_modules = issue_tracker.tests
 clean:
 	find . -name "*.pyc" -delete;
 	find . -type d -empty -delete;
-	
+
 cleanvirtualenv:
 	rm -rf $(VIRTUAL_ENV)
 
@@ -38,9 +38,9 @@ cleanvar: clean cleanvirtualenv
 cleanall: cleanvar
 
 pip:
-	$(PYTHON_BIN)/pip install -r requirements/local.txt
-	$(PYTHON_BIN)/pip install -r requirements/dependency_base.txt
-	$(PYTHON_BIN)/pip install -r requirements/base.txt
+	$(PYTHON_BIN)/pip install --prefer-binary -r requirements/local.txt
+	$(PYTHON_BIN)/pip install --prefer-binary -r requirements/dependency_base.txt
+	$(PYTHON_BIN)/pip install --prefer-binary -r requirements/base.txt
 
 initvirtualenv:
 	virtualenv -p $(PYTHON) $(VIRTUAL_ENV)
