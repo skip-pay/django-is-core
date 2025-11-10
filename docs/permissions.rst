@@ -139,6 +139,9 @@ If you want to implement custom permission, you only must create subclass of ``i
 Core permissions
 ----------------
 
+.. important::
+   Permissions defined on a Core cascade to all its views and REST resources by default.
+
 As an example of how to define core permissions we use model core of User object::
 
     from django.contrib.auth.models import User

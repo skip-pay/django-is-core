@@ -213,6 +213,9 @@ Inline Views
 
 Inline views allow editing related objects within a parent object's detail page.
 
+.. note::
+   **Use Case**: Inline views are perfect for parent-child relationships like Order → Order Items, Article → Tags, or Invoice → Line Items.
+
 **Example:** Edit article tags directly in the article detail view without navigating to a separate page.
 
 Inline Form Views

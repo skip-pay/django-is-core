@@ -214,6 +214,9 @@ Read-only Fields
 
 IS Core provides comprehensive support for read-only fields, allowing fields to be displayed without edit capability.
 
+.. important::
+   Unlike Django Admin, IS Core allows **any field** (including form-only fields) to be read-only, not just model fields.
+
 Configuration
 ^^^^^^^^^^^^^
 
@@ -432,6 +435,9 @@ Update field choices based on context::
 
 Monkey Patching on Initialization
 ----------------------------------
+
+.. warning::
+   IS Core modifies Django's default form widgets and fields during initialization. This is usually beneficial, but be aware if you have custom widget code.
 
 During IS Core initialization, several Django form components are enhanced:
 

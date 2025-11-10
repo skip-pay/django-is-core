@@ -86,6 +86,9 @@ Combined Core (DjangoUiRestCore)
 
 The most common case - combines UI + REST in a single Core. Provides both the admin interface and the REST API that powers it.
 
+.. tip::
+   **Recommended**: Use ``DjangoUiRestCore`` for most use cases. It gives you both admin UI and REST API with a single class definition.
+
 Example::
 
     from is_core.main import DjangoUiRestCore

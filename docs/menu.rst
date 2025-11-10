@@ -74,6 +74,9 @@ Prevent a Core from appearing in the menu::
 Custom Menu Generator
 ---------------------
 
+.. note::
+   The default menu generator automatically creates menu items from all registered Cores. You only need a custom generator for complex navigation structures.
+
 Create a custom menu generator for complex navigation requirements.
 
 Basic Custom Generator

@@ -577,6 +577,9 @@ Control specific operations::
 Standalone REST API
 -------------------
 
+.. tip::
+   **Building a React/Vue frontend?** Use ``DjangoRestCore`` to get a REST API without the built-in UI.
+
 Resources can be used independently without the IS Core UI to build custom frontends.
 
 REST-only Core

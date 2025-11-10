@@ -80,10 +80,17 @@ Next add two middlewares to the end of the ``MIDDLEWARE`` list::
 
 Setup
 =====
+
 To finally setup the application please follow these steps:
 
-1. Collect static files from django-is-core with command ``python manage.py collectstatic``
+1. Collect static files from Django IS Core with command ``python manage.py collectstatic``
 2. Sync database with command ``python manage.py migrate``
+
+.. note::
+   After installation, you can access the admin interface at ``http://localhost:8000/`` (or your configured URL prefix).
+
+.. tip::
+   Run ``python manage.py createsuperuser`` to create your first admin user if you haven't already.
 
 
 Settings

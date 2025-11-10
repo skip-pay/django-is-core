@@ -206,8 +206,14 @@ Available filter operators:
 Best Practices
 --------------
 
+.. tip::
+   **Performance Tip**: Filters generate database queries. Add database indexes on commonly filtered fields.
+
 1. **Keep filters simple** - Users should understand what each filter does
 2. **Limit ForeignKey choices** - Use UIFilterMixin to prevent huge dropdowns
 3. **Set sensible defaults** - Use ``default_list_filter`` for common cases
 4. **Test performance** - Complex filters can slow down queries
 5. **Add help text** - Use field ``help_text`` to explain filter behavior
+
+.. warning::
+   Filtering on non-indexed fields with large datasets can cause slow queries. Always add indexes for filtered fields.
