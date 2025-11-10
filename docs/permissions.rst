@@ -16,6 +16,32 @@ The main goal of the permissions system is to check if a client has access to re
 Predefined permissions
 ----------------------
 
+Quick Reference
+^^^^^^^^^^^^^^^
+
++---------------------------+---------------------------+---------------------------+
+| **Permission Class**      | **Use Case**              | **Grants Access When**    |
++===========================+===========================+===========================+
+| AllowAny                  | Public endpoints          | Always                    |
++---------------------------+---------------------------+---------------------------+
+| IsAuthenticated           | Logged-in users only      | User is authenticated     |
++---------------------------+---------------------------+---------------------------+
+| IsAdminUser               | Staff members             | User is staff             |
++---------------------------+---------------------------+---------------------------+
+| IsSuperuser               | Admin operations          | User is superuser         |
++---------------------------+---------------------------+---------------------------+
+| CoreReadAllowed           | View-only access          | Core read permission OK   |
++---------------------------+---------------------------+---------------------------+
+| CoreCreateAllowed         | Creating objects          | Core create permission OK |
++---------------------------+---------------------------+---------------------------+
+| CoreUpdateAllowed         | Editing objects           | Core update permission OK |
++---------------------------+---------------------------+---------------------------+
+| CoreDeleteAllowed         | Deleting objects          | Core delete permission OK |
++---------------------------+---------------------------+---------------------------+
+
+Permission Classes
+^^^^^^^^^^^^^^^^^^
+
 .. class:: is_core.auth.permissions.PermissionsSet
 
   ``PermissionSet`` contains a set of permissions identified by name. Permission is granted if permission with the given name grants the access. Finally if no permission with the given name is found ``False`` is returned.
