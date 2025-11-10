@@ -187,7 +187,7 @@ Adding Django IS Core to a new project is straightforward:
 
 1. Install IS Core in your project::
 
-    pip install django-is-core
+    pip install skip-django-is-core
 
 2. Add the app and register IS Core in ``INSTALLED_APPS``::
 

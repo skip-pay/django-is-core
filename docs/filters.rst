@@ -1,15 +1,13 @@
 Filters
 =======
 
-Filters are documented inside django-pyston. Is core uses Pyston filters to generate list view. Every column can
-contain form input which accepts inputu data. There is several options how is django widget which is used for rendering
-HTML of filter input:
+Filters are documented in the django-pyston library. IS Core uses Pyston filters to generate list views. Every column can contain a form input that accepts filter data. There are several options for configuring the Django widget used for rendering the filter input HTML:
 
 UIFilterMixin
 ^^^^^^^^^^^^^
 
-Django-is-core provedes special mixin for filters that adds posibility to change rendered widget inside filter class,
-example exclude ``ForeignKeyFilter`` with posibility to restrict field queryset choices::
+Django IS Core provides a special mixin for filters that adds the ability to change the rendered widget inside the filter class.
+For example, a ``ForeignKeyFilter`` with the ability to restrict field queryset choices::
 
     class RestrictedFkFilter(UIFilterMixin, ForeignKeyFilter):
 
@@ -23,13 +21,15 @@ example exclude ``ForeignKeyFilter`` with posibility to restrict field queryset 
             return formfield.widget
 
 
-Field filter
+Field Filter
 ^^^^^^^^^^^^
 
-There is two possibilities. If filter has set choices attribute, filter is always select box with filter choices. If not
-filter is obtained from model field by using method ``formfield``.
+There are two possibilities:
 
-Method/Resource filter
+1. If the filter has a ``choices`` attribute set, the filter is always rendered as a select box with those choices
+2. Otherwise, the filter widget is obtained from the model field using the ``formfield()`` method
+
+Method/Resource Filter
 ^^^^^^^^^^^^^^^^^^^^^^
 
-There is applied same rule as for field filter, but if choices is not defined is returned simple text input.
+The same rule applies as for field filters, but if ``choices`` is not defined, a simple text input is returned.

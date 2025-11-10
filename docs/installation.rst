@@ -29,14 +29,13 @@ All optional libraries are not installed automatically. Other libraries are depe
 Using Pip
 ---------
 
-Django is core is not currently inside *PyPE* but in the future you will be able to use:
+Django IS Core is available on PyPI:
 
 .. code-block:: console
 
-    $ pip install django-is-core
+    $ pip install skip-django-is-core
 
-
-Because *django-is-core* is rapidly evolving framework the best way how to install it is use source from github
+Alternatively, you can install directly from GitHub:
 
 .. code-block:: console
 
@@ -65,16 +64,19 @@ For using is-core you just add add ``is_core``, ``pyston`` and ``block_snippets`
         ...
     )
 
-``MIDDLEWARE_CLASSES``
-^^^^^^^^^^^^^^^^^^^^^^
+``MIDDLEWARE``
+^^^^^^^^^^^^^^
 
-Next add two middlewares to end of ``MIDDLEWARE_CLASSES`` variable::
+Next add two middlewares to the end of the ``MIDDLEWARE`` list::
 
-    MIDDLEWARE_CLASSES = (
+    MIDDLEWARE = [
         ...
         'is_core.middleware.RequestKwargsMiddleware',
         'is_core.middleware.HttpExceptionsMiddleware',
-    )
+    ]
+
+.. note::
+   For Django versions prior to 1.10, use ``MIDDLEWARE_CLASSES`` instead of ``MIDDLEWARE``.
 
 Setup
 =====

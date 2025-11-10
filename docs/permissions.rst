@@ -2,7 +2,7 @@
 Permissions
 ===========
 
-Main permissions goal is to often check if client has access to read/update/delete views. Implementation of `django-is-core` permissions system is very similar to DRF permissions. Base permission class is:
+The main goal of the permissions system is to check if a client has access to read/update/delete views. The implementation of Django IS Core's permissions system is very similar to Django REST Framework (DRF) permissions. The base permission class is:
 
 .. class:: is_core.auth.permissions.BasePermission
 

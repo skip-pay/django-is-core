@@ -4,26 +4,26 @@
    contain the root `toctree` directive.
 
 ==============================
-Django-is-core's documentation
+Django IS Core Documentation
 ==============================
 
-Django-is-core is application/framework for simple development of a Information System. You will find that it is very simlar to django admin but there si several differences that justifies why we created own implementation.
+Django IS Core is a framework for rapid development of information systems and admin interfaces. It is similar to Django Admin but offers several key differences that justify its existence as a separate implementation.
 
-Features
-========
+Key Features
+============
 
-- Django-is-core has same detail/add/table views as admin, but it uses REST and AJAX call to achieve it. It adds easier usage and broaden usability.
-- Django-is-core can be used for creation only REST resources without UI.
-- Models UI (add/detail) is more linked together. Links between foreign keys are automatically added.
-- Django-is-core provides more posibilities for readonly fields. For example the fields defined only inside form can be readonly too.
-- Exports to xlsx, pdf, csv can be very simply add to table view.
-- Better permissions, for example link between objects is not added to UI if user does not have permission to see the object.
-- Add new custom view is for django admin nightmare. With django-is-core it is very easy.
-- Django-is-core views as implemented with using generic views not as method. It is cleaner and changes are simplier.
-- Add new model administration without its registration.
-- Better objects filters from UI (automatically respond to user typing) and coding (easier new filter implementation) perspective too.
-- Token authorization.
-- And much much more.
+- **REST + AJAX Architecture**: Same detail/add/table views as Django Admin, but powered by REST API and AJAX for better interactivity
+- **Flexible REST Resources**: Can be used to create REST-only resources without UI
+- **Smart Relationships**: Foreign key links are automatically added between related objects
+- **Advanced Read-only Fields**: Any field (even form-only fields) can be made read-only
+- **Built-in Exports**: Add Excel, PDF, and CSV exports to any table view with zero configuration
+- **Granular Permissions**: Links and actions are hidden if users lack permissions
+- **Easy Customization**: Adding custom views is straightforward (unlike Django Admin)
+- **Class-based Views**: Cleaner architecture using generic class-based views
+- **Auto-registration**: Model administration without explicit registration
+- **Smart Filtering**: UI filters respond to user typing; easy to implement custom filters
+- **Token Authentication**: Built-in token-based authentication support
+- **And much more...**
 
 Project Home
 ------------
