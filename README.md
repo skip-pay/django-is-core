@@ -33,8 +33,34 @@ Docs
 For more details see [docs](http://django-is-core.readthedocs.org/)
 
 
-Contribution
-------------
+Documentation
+-------------
+
+### Building the Docs
+
+To build the documentation locally:
+
+1. Install Sphinx and the ReadTheDocs theme:
+   ```bash
+   pip install sphinx sphinx_rtd_theme
+   ```
+
+2. Build the HTML documentation:
+   ```bash
+   cd docs
+   make html
+   ```
+
+3. View the documentation by opening `docs/.build/html/index.html` in your browser, or serve it locally:
+   ```bash
+   python -m http.server 8000 --directory .build/html
+   ```
+   Then visit http://localhost:8000
+
+### Live Reload (for Contributors)
 
 To run Livereload for Sphinx you need [livereload](https://pypi.python.org/pypi/livereload) `pip install livereload`.
 After installing simply call `make htmllivereload` and open [http://localhost:5500/](http://localhost:5500/).
+
+Contribution
+------------
