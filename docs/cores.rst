@@ -549,14 +549,24 @@ HomeUiCore
 ------------
 
 ``HomeCore`` contains only one UI view which is index page. By default this page is empty and contains only menu
-because every information system has custom index. You can very simply change default view class by changing ``settings``
-attribute ``HOME_VIEW``, the default value is::
+because every information system has custom index.
 
-    HOME_VIEW = 'is_core.generic_views.HomeView'
+Customizing Home
+^^^^^^^^^^^^^^^^
 
-You can change whole is core too by attribute ``HOME_IS_CORE``, default value::
+Configure a custom home view and/or core via Django settings::
 
-    HOME_IS_CORE = 'is_core.main.HomeUiCore'
+    # settings.py
+    IS_CORE_HOME_VIEW = 'myapp.views.CustomHomeView'
+    IS_CORE_HOME_CORE = 'myapp.cores.CustomHomeCore'
+
+Default values::
+
+    IS_CORE_HOME_VIEW = 'is_core.generic_views.HomeView'
+    IS_CORE_HOME_CORE = 'is_core.main.HomeUiCore'
+
+.. note::
+   The default home is a UI Core without REST. If your home needs REST functionality, specify a combined core like ``DjangoUiRestCore``.
 
 
 DjangoUiCore
