@@ -5,6 +5,14 @@ Menu Generator
 
 Django IS Core provides a flexible menu system for the admin interface. The menu generator automatically creates navigation based on registered Cores and can be customized for complex navigation structures.
 
+.. seealso::
+
+   :ref:`cores`
+      Core classes that generate menu items
+
+   :ref:`architecture`
+      Understanding the Core registration system
+
 Overview
 --------
 

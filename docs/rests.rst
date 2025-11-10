@@ -5,6 +5,17 @@ REST Resources
 
 Django IS Core provides a powerful REST API system built on top of django-pyston. Resources define REST endpoints that serve as the backend for UI actions and can be used independently to build custom frontends.
 
+.. seealso::
+
+   :ref:`views`
+      UI views that consume these REST endpoints
+
+   :ref:`forms`
+      Forms used for validation in resources
+
+   :ref:`permissions`
+      Securing your REST endpoints
+
 Overview
 --------
 

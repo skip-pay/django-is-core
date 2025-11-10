@@ -5,6 +5,14 @@ Forms
 
 Django IS Core extends Django's form system with additional features for building rich admin interfaces. Forms handle validation, sanitization of input, and rendering of fields through enhanced widgets.
 
+.. seealso::
+
+   :ref:`views`
+      Views that use these forms
+
+   :ref:`rests`
+      REST resources use forms for validation
+
 Form Features
 -------------
 

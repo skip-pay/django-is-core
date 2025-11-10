@@ -229,6 +229,14 @@ Adding Django IS Core to a new project is straightforward:
 
 After these steps, login/authentication and basic administration are ready to use.
 
+.. seealso::
+
+   :ref:`installation`
+      Complete installation guide with all configuration options
+
+   :ref:`cores`
+      Detailed Core class documentation and API reference
+
 Monkey Patching
 ---------------
 

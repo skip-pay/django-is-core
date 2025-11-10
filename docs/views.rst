@@ -8,6 +8,17 @@ Django IS Core provides a comprehensive set of generic views for building admin 
 1. **Server-side rendered**: Traditional Django template rendering
 2. **AJAX-powered**: HTML structure with data loaded via REST endpoints
 
+.. seealso::
+
+   :ref:`rests`
+      REST Resources that power the AJAX views
+
+   :ref:`forms`
+      Form classes and widgets used in views
+
+   :ref:`permissions`
+      Controlling access to views
+
 View Types Overview
 -------------------
 
