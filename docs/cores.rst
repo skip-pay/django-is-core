@@ -401,8 +401,7 @@ The tuple format is: ``(url_name_suffix, url_pattern, view_class, can_create, ca
 
 Every view must have assigned is-core pattern class. This pattern is not the same patter that is used with **django**
 `urls`. This pattern has higher usability. You can use it to generate the url string or checking permissions. Option
-default_ui_pattern_class contains pattern class that is used with defined view classes. More about patterns you can
-find in section patterns. #TODO add link
+default_ui_pattern_class contains pattern class that is used with defined view classes.
 
 Methods
 ^^^^^^^
@@ -476,12 +475,12 @@ Options
 .. attribute:: RestCore.rest_classes
 
 Option contains REST classes that are automatically added to django urls. Use this option to add new REST resources.
-Example you can see in section REST. #TODO add link
+See :ref:`rests` for detailed examples.
 
 .. attribute:: RestCore.default_rest_pattern_class
 
 As UI views every resource must have assigned is-core pattern class. Default pattern for REST resources is
-`RestPattern`. More about patterns you can find in section patterns. #TODO add link
+``RestPattern``.
 
 Methods
 ^^^^^^^
@@ -718,8 +717,7 @@ Now we want to add inline form view of all reported issues to user **add** and *
     class UiRestUserCore(UIRestCore):
         form_inline_views = (ReportedIssuesInlineView,)
 
-The ``fk_name`` is not required if there is only one relation between ``User`` and ``Issue``. More about inline views you
-can find in generic views section # TODO add link.
+The ``fk_name`` is not required if there is only one relation between ``User`` and ``Issue``. More about inline views in :ref:`views`.
 
 .. attribute:: DjangoUiCore.fieldsets
 
@@ -850,20 +848,17 @@ Options
 
 Set ``rest_detailed_fields`` if you want to define fields that will be returned inside REST response for a request on
 concrete object (an URL contains an ID of a concrete model object. For example an URL of a request is ``/api/user/1/``).
-This option rewrites settings inside ``RESTMeta`` (you can find more about it at section #TODO add link).
 
 .. attribute:: DjangoRestCore.rest_general_fields
 
 Set ``rest_general_fields`` if you want to define fields that will be returned inside REST response for a request on
 more than one object (an URL does not contain an ID of a concrete objects, eq. ``/api/user/``). This defined set of
-fields is used for generating result of a foreign key object. This option rewrites settings inside ``RESTMeta``
-(you can find more about it at section #TODO add link).
+fields is used for generating result of a foreign key object.
 
 .. attribute:: DjangoRestCore.rest_extra_fields
 
 Use ``rest_extra_fields`` to define extra fields that is not returned by default, but can be extra requested
-by a HTTP header ``X-Fields`` or a GET parameter ``_fields``. More info you can find in **django-piston** library
-documentation. This option rewrites settings inside ``RESTMeta`` (you can find more about it at section #TODO add link).
+by a HTTP header ``X-Fields`` or a GET parameter ``_fields``. See the django-pyston library documentation for more details.
 
 **Example: API-Only Fields**
 
@@ -924,8 +919,7 @@ Usage example::
 
 ``rest_guest_fields`` contains list of fields that can be seen by user that has not permission to see the whole
 object data. In case that a user has permission to see an object that is related with other object that can not be
-seen. In this situation is returned only fields defined inside ``rest_guest_fields``. This option rewrites settings
-inside ``RESTMeta`` (you can find more about it at section #TODO add link).
+seen. In this situation is returned only fields defined inside ``rest_guest_fields``.
 
 .. attribute:: DjangoRestCore.rest_default_detailed_fields
 
