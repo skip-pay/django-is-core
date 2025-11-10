@@ -11,6 +11,25 @@ Django IS Core provides a comprehensive set of generic views for building admin 
 View Types Overview
 -------------------
 
+When to Use Which View
+^^^^^^^^^^^^^^^^^^^^^^
+
++---------------------------+---------------------------+---------------------------+
+| **Need**                  | **View Type**             | **Example Use Case**      |
++===========================+===========================+===========================+
+| List objects              | DjangoTableView           | User management list      |
++---------------------------+---------------------------+---------------------------+
+| Create new object         | DjangoAddFormView         | New article form          |
++---------------------------+---------------------------+---------------------------+
+| Edit object               | DjangoDetailFormView      | Edit user profile         |
++---------------------------+---------------------------+---------------------------+
+| View-only details         | DjangoReadonlyDetailView  | Archive viewer            |
++---------------------------+---------------------------+---------------------------+
+| Edit with related items   | Inline views              | Order + line items        |
++---------------------------+---------------------------+---------------------------+
+| Bulk operations           | BulkChangeFormView        | Change status of many     |
++---------------------------+---------------------------+---------------------------+
+
 Form Views
 ^^^^^^^^^^
 
