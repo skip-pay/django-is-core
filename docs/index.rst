@@ -40,6 +40,7 @@ Content
    :maxdepth: 2
 
    installation
+   architecture
    cores
    views
    rests
