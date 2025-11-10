@@ -44,6 +44,23 @@ Types of Core
 
 Django IS Core provides several types of Core classes that can be combined based on your needs:
 
+Which Core Type Should I Use?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++---------------------------+---------------------------+---------------------------+
+| **Use Case**              | **Core Type**             | **What You Get**          |
++===========================+===========================+===========================+
+| Full admin interface      | DjangoUiRestCore          | UI views + REST API       |
++---------------------------+---------------------------+---------------------------+
+| REST API only             | DjangoRestCore            | API endpoints only        |
++---------------------------+---------------------------+---------------------------+
+| UI with external API      | DjangoUiCore              | UI views (REST elsewhere) |
++---------------------------+---------------------------+---------------------------+
+| Custom frontend (React)   | DjangoRestCore            | API for your frontend     |
++---------------------------+---------------------------+---------------------------+
+| Static pages only         | UiCore                    | Simple server-side views  |
++---------------------------+---------------------------+---------------------------+
+
 UI Core
 ^^^^^^^
 
@@ -64,16 +81,16 @@ Django REST Core
 
 Default REST API over Django models with automatic CRUD endpoints.
 
-Combined Core (Django UICore)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Combined Core (DjangoUiRestCore)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The most common case - combines UI + REST in a single Core. Provides both the admin interface and the REST API that powers it.
 
 Example::
 
-    from is_core.main import UIRestCore
+    from is_core.main import DjangoUiRestCore
 
-    class ArticleCore(UIRestCore):
+    class ArticleCore(DjangoUiRestCore):
         model = Article
         list_display = ('title', 'author', 'created_at')
         form_fields = ('title', 'content', 'author')
