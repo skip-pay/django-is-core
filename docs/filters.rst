@@ -123,6 +123,110 @@ Create completely custom filter logic::
             manager.add_filter('created_at', DateRangeFilter)
             return manager
 
+**Example: Complex Q() Filters**
+
+Create filters that query across multiple tables using Django's Q objects::
+
+    from django.db.models import Q
+    from pyston.filters import Filter
+
+    class AppliedPromocodeIDFilter(Filter):
+        """Filter customers by applied promocode ID"""
+
+        def get_q(self, value, operator_slug, request):
+            # Search across multiple related tables
+            return Q(
+                # Direct promocode usage
+                customerpromocode__promocode_id__icontains=value
+            ) | Q(
+                # Promocode via orders
+                order__customerpromocode__promocode_id__icontains=value
+            ) | Q(
+                # Promocode via subscriptions
+                subscription__promocode_id__icontains=value
+            )
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        def get_list_filter(self, request):
+            manager = super().get_list_filter(request)
+            manager.add_filter('applied_promocode_id', AppliedPromocodeIDFilter)
+            return manager
+
+**Example: Enum-based Filters**
+
+Filter by choices from Python Enums::
+
+    from pyston.filters import SimpleFilter
+
+    class ChoicesEnumFilter(SimpleFilter):
+        """Filter with choices from an Enum"""
+
+        def __init__(self, enum_class, **kwargs):
+            self.enum_class = enum_class
+            super().__init__(**kwargs)
+
+        def get_filter_term(self, value, operator_slug, request):
+            # Convert enum value to database value
+            if hasattr(self.enum_class, value):
+                db_value = getattr(self.enum_class, value).value
+                return {f'{self.field_name}__exact': db_value}
+            return {}
+
+        def get_choices(self):
+            # Generate choices from enum
+            return [(e.name, e.value) for e in self.enum_class]
+
+    # Usage with ContentType filtering
+    from django.contrib.contenttypes.models import ContentType
+
+    class PaymentMethodFilter(ChoicesEnumFilter):
+        def get_filter_term(self, value, operator_slug, request):
+            # Filter by ContentType for polymorphic relationships
+            content_types = ContentType.objects.filter(
+                model__in=['creditcard', 'banktransfer', 'paypal']
+            )
+            return {
+                f'{self.field_name}__in': content_types
+            }
+
+    class OrderCore(DjangoUiRestCore):
+        model = Order
+
+        def get_list_filter(self, request):
+            manager = super().get_list_filter(request)
+            manager.add_filter(
+                'payment_method_type',
+                PaymentMethodFilter,
+                enum_class=PaymentMethodEnum
+            )
+            return manager
+
+**Example: JSON Field Filters**
+
+Filter by values within JSON fields::
+
+    from pyston.filters import Filter
+
+    class JSONFieldFilter(Filter):
+        """Filter customers by features enabled in JSON field"""
+
+        def get_q(self, value, operator_slug, request):
+            # Filter by JSON array contains
+            return Q(**{
+                f'{self.field_name}__contains': [value]
+            })
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        def get_list_filter(self, request):
+            manager = super().get_list_filter(request)
+            # Filter by enabled features in JSON field
+            manager.add_filter('enabled_features', JSONFieldFilter)
+            return manager
+
 Common Filter Patterns
 ----------------------
 

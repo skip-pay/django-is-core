@@ -619,6 +619,64 @@ Use the REST API with React, Vue, or any other frontend::
         return response.json();
     }
 
+Background Tasks with Celery
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use Celery integration for long-running operations::
+
+    from is_core.rest.resource import CeleryDjangoCoreResource
+
+    class CustomerResource(CeleryDjangoCoreResource):
+        """Resource with background task support"""
+        model = Customer
+
+        @short_description(_('Total Orders'))
+        def total_orders(self, obj):
+            """Computed field - available as extra field"""
+            return obj.orders.count()
+
+        @short_description(_('Lifetime Value'))
+        def lifetime_value(self, obj):
+            """Expensive aggregation - computed on demand"""
+            from django.db.models import Sum
+            return obj.orders.aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+
+        def _create_task(self, request, data):
+            """Called when object creation is queued as background task"""
+            from .tasks import create_customer_task
+            return create_customer_task.delay(data)
+
+    # tasks.py
+    from celery import shared_task
+
+    @shared_task
+    def create_customer_task(customer_data):
+        """Background task for customer creation"""
+        # Perform expensive operations
+        customer = Customer.objects.create(**customer_data)
+
+        # Register with external CRM
+        external_crm = ExternalCRM()
+        external_crm.register_customer(customer)
+
+        # Send welcome email
+        send_welcome_email(customer)
+
+        return customer.pk
+
+Key features of ``CeleryDjangoCoreResource``:
+
+- Automatically queues long-running operations as Celery tasks
+- Returns task ID immediately for tracking
+- Client can poll for task status
+- Ideal for imports, exports, batch operations
+- Built-in error handling and retry logic
+
+.. note::
+   Use ``CeleryDjangoCoreResource`` when operations take more than 2-3 seconds to complete. This prevents HTTP timeouts and improves user experience.
+
 Best Practices
 --------------
 

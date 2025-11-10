@@ -292,6 +292,106 @@ Example::
             # Automatically filtered to parent article
             return Comment.objects.filter(article=parent_instance)
 
+**Example: Complex Inline Configuration**
+
+Use multiple inline views with different configurations::
+
+    from is_core.generic_views.inlines import (
+        TabularInlineFormView,
+        DjangoInlineTableView,
+        ResponsiveInlineObjectsView
+    )
+
+    class CustomerAddressInlineView(TabularInlineFormView):
+        """Edit customer addresses inline"""
+        model = Address
+        fk_name = 'customer'
+        fields = ('street', 'city', 'postal_code', 'country', 'is_billing')
+        can_delete = True
+        max_num = 5
+        extra = 1  # One empty form for new address
+
+    class CustomerOrdersInlineTableView(DjangoInlineTableView):
+        """Table of customer orders with full AJAX functionality"""
+        model = Order
+        fk_name = 'customer'
+        list_display = ('order_number', 'created_at', 'total', 'status')
+        list_actions = ('view', 'cancel')
+
+        def get_list_filter(self, request, parent_instance):
+            return Order.objects.filter(customer=parent_instance)
+
+    class CustomerNotesInlineView(ResponsiveInlineObjectsView):
+        """Read-only display of customer notes"""
+        model = Note
+        fk_name = 'customer'
+        fields = ('created_at', 'author', 'content')
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        inlines = (
+            CustomerAddressInlineView,      # Editable addresses
+            CustomerOrdersInlineTableView,  # Interactive orders table
+            CustomerNotesInlineView,        # Read-only notes
+        )
+
+Tabs System
+^^^^^^^^^^^
+
+Use tabs to organize complex detail views::
+
+    class CustomerTabsViewMixin:
+        """Mixin adding tabs to customer detail view"""
+
+        def get_tabs(self, request, obj):
+            tabs = [
+                {
+                    'name': 'detail',
+                    'title': _('Customer Details'),
+                    'url': self.core.get_ui_url('change', pk=obj.pk),
+                },
+                {
+                    'name': 'orders',
+                    'title': _('Orders'),
+                    'url': self.core.get_ui_url('orders', customer_pk=obj.pk),
+                    'badge': obj.orders.count(),
+                },
+                {
+                    'name': 'invoices',
+                    'title': _('Invoices'),
+                    'url': self.core.get_ui_url('invoices', customer_pk=obj.pk),
+                },
+                {
+                    'name': 'payments',
+                    'title': _('Payment Methods'),
+                    'url': self.core.get_ui_url('payments', customer_pk=obj.pk),
+                },
+            ]
+
+            # Conditional tabs based on permissions
+            if request.user.has_perm('customers.view_audit_log'):
+                tabs.append({
+                    'name': 'audit',
+                    'title': _('Audit Log'),
+                    'url': self.core.get_ui_url('audit', customer_pk=obj.pk),
+                })
+
+            # Conditional tabs based on object state
+            if obj.has_subscription:
+                tabs.append({
+                    'name': 'subscription',
+                    'title': _('Subscription'),
+                    'url': self.core.get_ui_url('subscription', customer_pk=obj.pk),
+                    'badge': 'Active' if obj.subscription.is_active else 'Inactive',
+                })
+
+            return tabs
+
+    class CustomerDetailView(CustomerTabsViewMixin, DjangoDetailFormView):
+        model = Customer
+        form_class = CustomerForm
+
 View Configuration in Cores
 ----------------------------
 
@@ -358,3 +458,111 @@ Add custom actions to table rows::
                     'type': 'api'
                 })
             return actions
+
+Field-Level Permissions
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Control access to individual fields based on user permissions::
+
+    from is_core.auth.permissions import FieldsSetPermission
+
+    class CustomerDetailView(DjangoDetailFormView):
+        model = Customer
+        form_class = CustomerForm
+
+        def get_permission_obj_or_none(self, request, obj):
+            # Set field permissions based on user role
+            if request.user.has_perm('customers.view_sensitive_data'):
+                # Full access to all fields
+                return obj
+            else:
+                # Restricted access - hide sensitive fields
+                return FieldsSetPermission(
+                    obj=obj,
+                    read_only_fields=(
+                        'ssn',           # Social security number
+                        'tax_id',        # Tax identification
+                        'credit_score',  # Financial data
+                    )
+                )
+
+        def get_readonly_fields(self, request, obj=None):
+            readonly = list(super().get_readonly_fields(request, obj))
+
+            # Make fields read-only based on object state
+            if obj and obj.is_anonymized:
+                readonly.extend([
+                    'email',
+                    'phone_number',
+                    'billing_address',
+                ])
+
+            return readonly
+
+**Read-Only Guard Mixin**
+
+Protect archived or anonymized data from modification::
+
+    class CustomerReadonlyGuardMixin:
+        """Prevent editing of archived/anonymized customers"""
+
+        def get_readonly_fields(self, request, obj=None):
+            readonly = list(super().get_readonly_fields(request, obj))
+
+            if obj and (obj.is_anonymized or obj.is_archived):
+                # Make all fields read-only
+                readonly = list(self.get_fields(request, obj))
+
+            return readonly
+
+        def has_update_permission(self, request, obj=None):
+            if obj and (obj.is_anonymized or obj.is_archived):
+                return False
+            return super().has_update_permission(request, obj)
+
+    class CustomerDetailView(CustomerReadonlyGuardMixin, DjangoDetailFormView):
+        model = Customer
+        form_class = CustomerForm
+
+Dynamic Fieldsets
+^^^^^^^^^^^^^^^^^
+
+Adjust form organization based on object state::
+
+    class CustomerDetailView(DjangoDetailFormView):
+        model = Customer
+
+        def get_fieldsets(self, request, obj=None):
+            # Basic fieldset for all customers
+            fieldsets = [
+                ('Basic Information', {
+                    'fields': ('email', 'first_name', 'last_name', 'phone')
+                }),
+            ]
+
+            # Add billing fieldset only for active customers
+            if obj and obj.is_active:
+                fieldsets.append(
+                    ('Billing', {
+                        'fields': ('billing_address', 'payment_method')
+                    })
+                )
+
+            # Add subscription fieldset if customer has subscription
+            if obj and obj.has_subscription:
+                fieldsets.append(
+                    ('Subscription', {
+                        'fields': ('subscription_plan', 'subscription_status', 'renewal_date')
+                    })
+                )
+
+            # Add admin-only fieldset for superusers
+            if request.user.is_superuser:
+                fieldsets.append(
+                    ('Admin', {
+                        'fields': ('is_test_account', 'internal_notes'),
+                        'classes': ('collapse',)
+                    })
+                )
+
+            return fieldsets

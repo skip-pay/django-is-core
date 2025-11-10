@@ -222,6 +222,20 @@ Method ``per_save_model`` is called before saving object to database. Body is em
 
 Method ``post_save_model`` is called after saving object to database. Body is empty by default.
 
+**Example: Additional Processing After Save**
+
+Perform additional processing after an object is successfully saved::
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        def post_save_model(self, request, obj, form, change):
+            super().post_save_model(request, obj, form, change)
+
+            # Trigger communication for newly registered customers
+            if not change:  # Only for new customers
+                trigger_customer_registered_communication(obj)
+
 .. method:: DjangoCore.save_model(request, obj, form, change)
 
 You can rewrite this method if you want to change way how is object saved to database. Default body is::
@@ -273,6 +287,26 @@ improve a speed of your application use this function to create preloading of re
 
 Use this method if you want to change ``list_actions`` dynamically.
 
+**Example: Dynamic Actions Based on State**
+
+Add actions that depend on object state::
+
+    class ArticleCore(DjangoUiRestCore):
+        model = Article
+
+        def get_list_actions(self, request, obj):
+            actions = super().get_list_actions(request, obj)
+
+            # Add publish action only for draft articles
+            if obj.status == 'draft':
+                actions.append({
+                    'url': self.get_rest_url('publish', pk=obj.pk),
+                    'verbose_name': _('Publish'),
+                    'action': 'publish',
+                })
+
+            return actions
+
 
 .. method:: DjangoCore.get_default_action(request, obj)
 
@@ -297,6 +331,21 @@ Every UI core has one place inside menu that addresses one of UI views of a core
 Option `show_in_menu` is set to ``True`` by default. If you want to remove core view from menu set this option to
 ``False``.
 
+**Example Usage**
+
+Hide utility cores from the main navigation::
+
+    class CustomerImportCore(DjangoUiRestCore):
+        """Internal core for CSV import - not shown in menu"""
+        model = Customer
+        show_in_menu = False  # Hidden from navigation
+        menu_url_name = None  # No menu link
+
+    class CustomerAuditLogCore(DjangoRestCore):
+        """API-only core for audit logs"""
+        model = CustomerAuditLog
+        show_in_menu = False  # REST-only, no UI
+
 .. attribute:: UiCore.view_classes
 
 Option contains view classes that are automatically added to Django urls. Use this option to add new views. Example
@@ -316,6 +365,37 @@ you can see in section generic views (this is a declarative way if you want to r
         view_classes = (
             ('reports', r'^/reports/$', MonthReportView),
         )
+
+**Complex Example**
+
+Register multiple custom views with specific permissions::
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        view_classes = (
+            # Custom detail view with tabs
+            ('change', r'^/(?P<pk>[^/]+)/$', CustomerDetailView, False, False),
+
+            # Related object management
+            ('add-address', r'^/(?P<customer_pk>[^/]+)/address/add/$', AddressAddView, False, True),
+            ('edit-address', r'^/(?P<customer_pk>[^/]+)/address/(?P<pk>[^/]+)/$', AddressDetailView, False, False),
+
+            # Custom actions with parent scoping
+            ('activate', r'^/(?P<pk>[^/]+)/activate/$', CustomerActivateView, False, False),
+            ('deactivate', r'^/(?P<pk>[^/]+)/deactivate/$', CustomerDeactivateView, False, False),
+
+            # Bulk operations
+            ('bulk-export', r'^/bulk-export/$', CustomerBulkExportView, False, False),
+        )
+
+The tuple format is: ``(url_name_suffix, url_pattern, view_class, can_create, can_delete)``
+
+- ``url_name_suffix``: Suffix added to core's base URL name
+- ``url_pattern``: Regular expression for URL matching
+- ``view_class``: The view class to use
+- ``can_create``: Boolean indicating if this view can create objects (default: False)
+- ``can_delete``: Boolean indicating if this view can delete objects (default: False)
 
 .. attribute:: UiCore.default_ui_pattern_class
 
@@ -418,6 +498,52 @@ Use this method if you want to change ``rest_classes`` dynamically.
 .. method:: RestCore.get_rest_patterns()
 
 Contains code that generates ``rest_patterns`` from rest classes. Method returns an ordered dict of pattern classes.
+
+**Example: Custom REST Endpoints**
+
+Add custom REST endpoints alongside standard CRUD operations::
+
+    from django.conf.urls import patterns, url
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        def get_rest_patterns(self):
+            # Get default patterns (list, detail, create, update, delete)
+            rest_patterns = super().get_rest_patterns()
+
+            # Add custom action endpoints
+            rest_patterns.update({
+                'activate': (
+                    r'^/(?P<pk>[^/]+)/activate/$',
+                    self.resource_class,
+                    {'allowed_methods': ('post',)}
+                ),
+                'deactivate': (
+                    r'^/(?P<pk>[^/]+)/deactivate/$',
+                    self.resource_class,
+                    {'allowed_methods': ('post',)}
+                ),
+                'bulk-export': (
+                    r'^/bulk-export/$',
+                    self.resource_class,
+                    {'allowed_methods': ('post',)}
+                ),
+                'stats': (
+                    r'^/stats/$',
+                    CustomerStatsResource,
+                    {'allowed_methods': ('get',)}
+                ),
+            })
+
+            return rest_patterns
+
+This creates additional REST endpoints:
+
+- ``POST /api/customer/{pk}/activate/`` - Activate customer
+- ``POST /api/customer/{pk}/deactivate/`` - Deactivate customer
+- ``POST /api/customer/bulk-export/`` - Export multiple customers
+- ``GET /api/customer/stats/`` - Get customer statistics
 
 HomeUiCore
 ------------
@@ -728,6 +854,61 @@ fields is used for generating result of a foreign key object. This option rewrit
 Use ``rest_extra_fields`` to define extra fields that is not returned by default, but can be extra requested
 by a HTTP header ``X-Fields`` or a GET parameter ``_fields``. More info you can find in **django-piston** library
 documentation. This option rewrites settings inside ``RESTMeta`` (you can find more about it at section #TODO add link).
+
+**Example: API-Only Fields**
+
+Expose computed or aggregated data via REST API without including it in default responses.
+
+Define the fields in your Core::
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        # Fields only available when explicitly requested via API
+        rest_extra_fields = (
+            'coin_balance',           # Computed field
+            'applied_promocodes_id',  # Filterable field
+        )
+
+        # Allow filtering by extra fields in REST API
+        rest_extra_filter_fields = (
+            'applied_promocodes_id',
+        )
+
+Then define the computed fields in your Resource::
+
+    from is_core.utils.decorators import short_description
+    from pyston.utils.decorators import filter_class
+
+    class CustomerResource(DjangoCoreResource):
+        model = Customer
+
+        @short_description(_('Coin Balance'))
+        def coin_balance(self, obj):
+            return CoinTransaction.objects.compute_balance_for_customer(obj)
+
+        # For filterable extra fields, use @filter_class decorator
+        @filter_class(AppliedPromocodeIDFilter)
+        @property
+        def applied_promocodes_id(self):
+            return None  # Return value not used, filter handles the logic
+
+This pattern is useful for:
+
+- **Performance**: Expensive computed fields are only calculated when needed
+- **API flexibility**: Frontend can request additional data without changing default payload
+- **Separation**: REST-only data doesn't clutter UI field definitions
+
+Usage example::
+
+    # Default API call - excludes extra fields
+    GET /api/customers/?limit=20
+
+    # Request with extra fields
+    GET /api/customers/?_fields=id,name,coin_balance,applied_promocodes_id
+
+    # Filter by extra field (requires @filter_class decorator)
+    GET /api/customers/?applied_promocodes_id__icontains=PROMO123
 
 .. attribute:: DjangoRestCore.rest_default_guest_fields
 
