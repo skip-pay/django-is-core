@@ -95,7 +95,7 @@ Example::
 
     class ArticleCore(DjangoUiRestCore):
         model = Article
-        list_display = ('title', 'author', 'created_at')
+        list_fields = ('title', 'author', 'created_at')
         form_fields = ('title', 'content', 'author')
 
 Registration and Auto-discovery

@@ -64,7 +64,7 @@ Table views display lists of model instances with interactive features like filt
 - HTML contains only structure/headers
 - Require ``get_list_filter`` method to define queryset
 - Support for exports (XLSX, PDF, CSV)
-- Configurable columns via ``list_display``
+- Configurable columns via ``list_fields``
 
 Object Views
 ^^^^^^^^^^^^
@@ -161,7 +161,7 @@ Main table view for displaying lists of model instances.
 
 **Configuration:**
 
-``list_display``
+``list_fields``
   Tuple of field names or callables to display as columns
 
 ``list_filter``
@@ -176,7 +176,7 @@ Example::
 
     class ArticleTableView(DjangoTableView):
         model = Article
-        list_display = ('title', 'author', 'published_at', 'status')
+        list_fields = ('title', 'author', 'published_at', 'status')
         list_filter = ('status', 'author', 'published_at')
 
         def get_list_filter(self, request):
@@ -286,7 +286,7 @@ Example::
     class ArticleCommentInlineTableView(DjangoInlineTableView):
         model = Comment
         fk_name = 'article'
-        list_display = ('author', 'created_at', 'excerpt')
+        list_fields = ('author', 'created_at', 'excerpt')
 
         def get_list_filter(self, request, parent_instance):
             # Automatically filtered to parent article
@@ -315,7 +315,7 @@ Use multiple inline views with different configurations::
         """Table of customer orders with full AJAX functionality"""
         model = Order
         fk_name = 'customer'
-        list_display = ('order_number', 'created_at', 'total', 'status')
+        list_fields = ('order_number', 'created_at', 'total', 'status')
         list_actions = ('view', 'cancel')
 
         def get_list_filter(self, request, parent_instance):
@@ -402,7 +402,7 @@ Views are typically configured within Core classes::
     class ArticleCore(UIRestCore):
         model = Article
 
-        list_display = ('title', 'author', 'published_at')
+        list_fields = ('title', 'author', 'published_at')
         form_fields = ('title', 'content', 'author')
 
         # Customize detail view
@@ -420,7 +420,7 @@ Custom Column Rendering
 Define methods in your Core to customize column display::
 
     class ArticleCore(UIRestCore):
-        list_display = ('title', 'author_name', 'word_count')
+        list_fields = ('title', 'author_name', 'word_count')
 
         def author_name(self, obj):
             return obj.author.get_full_name()

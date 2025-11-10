@@ -802,14 +802,14 @@ Use this method if you want to change ``form_inline_views`` dynamically.
 
 Use this method if you want to change ``default_list_filter`` dynamically.
 
-.. method:: UiCore.get_list_display(request)
+.. method:: UiCore.get_list_fields(request)
 
-Use this method if you want to change ``list_display`` dynamically.
+Use this method if you want to change ``list_fields`` dynamically.
 
-.. method:: UiCore.get_export_display(request)
+.. method:: UiCore.get_export_fields(request)
 
-Method returns ``export_display`` if no export_display is set the output is result of method
-``get_list_display(request)``.
+Method returns ``export_fields`` if no export_fields is set the output is result of method
+``get_list_fields(request)``.
 
 .. method:: UiCore.get_export_types(request)
 

@@ -14,13 +14,13 @@ Filters allow users to narrow down data in table views. IS Core uses django-pyst
 How Filters Work
 ----------------
 
-When you define a Core with ``list_display``, IS Core automatically creates filters for those fields. Users can type in filter inputs and the table updates automatically via AJAX.
+When you define a Core with ``list_fields``, IS Core automatically creates filters for those fields. Users can type in filter inputs and the table updates automatically via AJAX.
 
 Example::
 
     class ArticleCore(DjangoUiRestCore):
         model = Article
-        list_display = ('title', 'author', 'status', 'created_at')
+        list_fields = ('title', 'author', 'status', 'created_at')
         # Filters are automatically created for all fields
 
 Filter Types
@@ -59,7 +59,7 @@ Example::
 
     class ArticleCore(DjangoUiRestCore):
         model = Article
-        list_display = ('title', 'word_count')
+        list_fields = ('title', 'word_count')
 
         def word_count(self, obj):
             return len(obj.content.split())
@@ -236,7 +236,7 @@ Disable Filters
 Disable filtering for specific columns::
 
     class ArticleCore(DjangoUiRestCore):
-        list_display = ('title', 'author', 'content_preview')
+        list_fields = ('title', 'author', 'content_preview')
 
         def content_preview(self, obj):
             return obj.content[:100]
@@ -262,7 +262,7 @@ Filter by fields in related models::
 
     class ArticleCore(DjangoUiRestCore):
         model = Article
-        list_display = ('title', 'author__email', 'author__team')
+        list_fields = ('title', 'author__email', 'author__team')
         # Filters automatically work for related fields
 
 Case-Insensitive Search

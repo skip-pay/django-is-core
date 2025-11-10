@@ -49,7 +49,7 @@ render_model_object_with_link
 
        class ArticleCore(DjangoUiRestCore):
            model = Article
-           list_display = ('title', 'author_link')
+           list_fields = ('title', 'author_link')
 
    Use custom display text::
 
@@ -229,7 +229,7 @@ Create custom display methods for Core list views::
 
     class OrderCore(DjangoUiRestCore):
         model = Order
-        list_display = ('order_number', 'customer_link', 'total_formatted')
+        list_fields = ('order_number', 'customer_link', 'total_formatted')
 
         def customer_link(self, obj):
             return render_model_object_with_link(
@@ -275,7 +275,7 @@ Use in fieldsets for read-only display::
 Best Practices
 --------------
 
-1. **Use display utilities in list_display** - Keep views clean and readable
+1. **Use display utilities in list_fields** - Keep views clean and readable
 2. **Check permissions** - Use ``get_link_or_none`` to avoid broken links
 3. **Custom display text** - Override default ``__str__`` when needed
 4. **Handle None values** - ``display_for_value`` handles None gracefully
