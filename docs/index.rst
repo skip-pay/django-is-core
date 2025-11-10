@@ -50,4 +50,3 @@ Content
    utils
    menu
    elasticsearch
-   dynamodb
