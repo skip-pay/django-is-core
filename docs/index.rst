@@ -38,9 +38,15 @@ Content
 
 .. toctree::
    :maxdepth: 2
+   :caption: Getting Started
 
    installation
    architecture
+
+.. toctree::
+   :maxdepth: 2
+   :caption: User Guide
+
    cores
    views
    rests
@@ -49,4 +55,15 @@ Content
    filters
    utils
    menu
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   reference/index
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Advanced
+
    elasticsearch
