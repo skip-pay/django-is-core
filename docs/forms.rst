@@ -167,13 +167,6 @@ Example::
             })
         )
 
-**Features:**
-
-- Thumbnail preview of current image
-- "Clear" checkbox to remove existing file
-- File size display
-- Upload progress indication
-
 Multiple Choice Widgets
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -432,83 +425,6 @@ Update field choices based on context::
                 self.fields['author'].queryset = User.objects.filter(
                     team=user.team
                 )
-
-Monkey Patching on Initialization
-----------------------------------
-
-.. warning::
-   IS Core modifies Django's default form widgets and fields during initialization. This is usually beneficial, but be aware if you have custom widget code.
-
-During IS Core initialization, several Django form components are enhanced:
-
-Widget Enhancements
-^^^^^^^^^^^^^^^^^^^
-
-**className Addition**
-  All widgets automatically get appropriate CSS classes for styling
-
-**Placeholder Support**
-  Widgets that support placeholders get automatic placeholder generation from field metadata
-
-**Date/Time Enhancements**
-  Date and time widgets are replaced with enhanced picker widgets
-
-**File/Image Improvements**
-  File and image inputs get preview and clear functionality
-
-**Multiple Choice Updates**
-  Select and multiple choice widgets get search and better interaction
-
-Model Enhancements
-^^^^^^^^^^^^^^^^^^
-
-**Relationship Display**
-  Improved display of ForeignKey and ManyToManyField relationships
-
-**URLField Enhancement**
-  URLField values displayed as clickable links
-
-**Object Naming**
-  Better ``__str__`` representation for admin display
-
-Global Defaults
-^^^^^^^^^^^^^^^
-
-**Read-only Default**
-  Global default: ``readonly=False``
-  Fields can be switched to read-only at render time
-
-**Form Field Generation**
-  Automatic form field generation from model fields with proper widgets
-
-Example of monkey-patched behavior::
-
-    # Before IS Core initialization
-    class MyForm(forms.Form):
-        name = forms.CharField()
-        # Renders as: <input type="text" name="name">
-
-    # After IS Core initialization
-    # Same form now renders as:
-    # <input type="text" name="name" class="text-input"
-    #        placeholder="Enter name">
-
-Best Practices
---------------
-
-1. **Use SmartModelForm** for model-based forms to get automatic field generation and validation
-
-2. **Leverage read-only fields** instead of disabling inputs for better UX
-
-3. **Use fieldsets** to organize complex forms into logical sections
-
-4. **Implement proper validation** at the appropriate level (field, form, or model)
-
-5. **Make forms dynamic** when needed but keep the logic clear and maintainable
-
-6. **Use custom widgets** for specialized input types (date pickers, file uploads, etc.)
-
-7. **Test form validation** thoroughly, especially for complex multi-field validation
 
 Custom Fieldsets Organization
 ==============================

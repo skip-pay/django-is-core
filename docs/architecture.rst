@@ -25,7 +25,7 @@ The framework is built around several key concepts:
 Request Flow
 ------------
 
-A typical request in Django IS Core follows this pattern:
+An example request flow in Django IS Core:
 
 .. image:: .images/iscore-arch.png
    :alt: IS Core Architecture Diagram
@@ -42,7 +42,7 @@ The flow in detail:
 Types of Core
 -------------
 
-Django IS Core provides several types of Core classes that can be combined based on your needs:
+Django IS Core provides several types of Core classes that can be combined based on your needs. For detailed information on working with cores, see :doc:`cores`.
 
 Which Core Type Should I Use?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,25 +66,35 @@ UI Core
 
 Handles server-side rendered views without REST queries during interaction. Useful for simple, static pages.
 
+**API Reference**: :class:`is_core.main.UiCore`
+
 REST Core
 ^^^^^^^^^
 
 Generates REST API over models providing CRUD operations, pagination, filtering, etc. Can be used independently to build custom frontends (e.g., React, Vue).
+
+**API Reference**: :class:`is_core.main.RestCore`
 
 Django UI Core
 ^^^^^^^^^^^^^^
 
 A UI Core specialized for Django models providing default list/detail/create views automatically.
 
+**API Reference**: :class:`is_core.main.DjangoUiCore`
+
 Django REST Core
 ^^^^^^^^^^^^^^^^
 
 Default REST API over Django models with automatic CRUD endpoints.
 
+**API Reference**: :class:`is_core.main.DjangoRestCore`
+
 Combined Core (DjangoUiRestCore)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The most common case - combines UI + REST in a single Core. Provides both the admin interface and the REST API that powers it.
+
+**API Reference**: :class:`is_core.main.DjangoUiRestCore`
 
 .. tip::
    **Recommended**: Use ``DjangoUiRestCore`` for most use cases. It gives you both admin UI and REST API with a single class definition.
@@ -96,7 +106,7 @@ Example::
     class ArticleCore(DjangoUiRestCore):
         model = Article
         list_fields = ('title', 'author', 'created_at')
-        form_fields = ('title', 'content', 'author')
+        fields = ('title', 'content', 'author')
 
 Registration and Auto-discovery
 --------------------------------
@@ -115,7 +125,7 @@ Registration Process
 ^^^^^^^^^^^^^^^^^^^^
 
 1. **Django Apps Discovery**: ``INSTALLED_APPS`` → IS Core singleton (``ISSite``) discovers all apps
-2. **Automatic Import**: In each app, the ``cores`` module is automatically imported (if it exists)
+2. **Automatic Import**: In each app listed in ``INSTALLED_APPS``, the ``cores.py`` module is automatically imported (if it exists)
 3. **Metaclass Registration**: Core classes use the ``CoreBase`` metaclass which automatically registers them into the ``CoresLoader`` singleton when the class is defined
 4. **URL Generation**: In ``urls.py``, importing the IS Core singleton generates complete URLs including admin routes
 
@@ -136,7 +146,7 @@ Resources and Actions
 Generic Resource
 ^^^^^^^^^^^^^^^^
 
-A custom endpoint where you implement get/post/put/delete methods and register it via ``get_rest_patterns`` on a specific path.
+A custom endpoint where you implement get/post/put/delete methods. Resources are registered by returning them from a Core's ``get_rest_patterns()`` method. See :ref:`custom_url_patterns` for details on registering custom resources.
 
 Example::
 
@@ -160,7 +170,7 @@ An internal "model resource" providing ready-made CRUD over a model. Behavior ca
 List Actions
 ^^^^^^^^^^^^
 
-The backend returns a list of actions for each row via ``get_list_actions``:
+The backend returns a list of actions for each row via ``get_list_actions``. For more details, see :ref:`list_actions`.
 
 **UI actions**
   e.g., redirect to detail view (without calling backend)

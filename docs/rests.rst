@@ -3,7 +3,7 @@
 REST Resources
 ==============
 
-Django IS Core provides a powerful REST API system built on top of django-pyston. Resources define REST endpoints that serve as the backend for UI actions and can be used independently to build custom frontends.
+Django IS Core provides a REST API system built on top of django-pyston. Resources define REST endpoints that serve as the backend for UI actions and can be used independently to build custom frontends.
 
 .. seealso::
 
@@ -676,29 +676,6 @@ Key features of ``CeleryDjangoCoreResource``:
 
 .. note::
    Use ``CeleryDjangoCoreResource`` when operations take more than 2-3 seconds to complete. This prevents HTTP timeouts and improves user experience.
-
-Best Practices
---------------
-
-1. **Use DjangoCoreResource** for standard CRUD operations over models
-
-2. **Implement proper permissions** at resource, object, and method levels
-
-3. **Validate input** using Django forms integrated with resources
-
-4. **Control serialization** to avoid exposing sensitive data
-
-5. **Implement pagination** for list endpoints to avoid performance issues
-
-6. **Use appropriate HTTP methods** - GET for reads, POST for creates, PUT/PATCH for updates, DELETE for deletes
-
-7. **Return proper status codes** - 200 for success, 201 for created, 400 for validation errors, 403 for permission denied, 404 for not found
-
-8. **Document custom endpoints** so frontend developers know how to use them
-
-9. **Version your API** if you plan to make breaking changes
-
-10. **Test REST endpoints** thoroughly, including error cases and edge conditions
 
 Celery Background Export Integration
 =====================================

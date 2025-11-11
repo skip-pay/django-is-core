@@ -283,6 +283,8 @@ permissions.
 The related objects of queryset should sometimes very slow down retrieving data from the database. If you want to
 improve a speed of your application use this function to create preloading of related objects.
 
+.. _list_actions:
+
 .. method:: DjangoCore.get_list_actions(request, obj)
 
 Use this method if you want to change ``list_actions`` dynamically.
@@ -893,16 +895,12 @@ Then define the computed fields in your Resource::
             return CoinTransaction.objects.compute_balance_for_customer(obj)
 
         # For filterable extra fields, use @filter_class decorator
+        # The property returns None because the @filter_class decorator
+        # intercepts filtering logic - the return value is not used
         @filter_class(AppliedPromocodeIDFilter)
         @property
         def applied_promocodes_id(self):
-            return None  # Return value not used, filter handles the logic
-
-This pattern is useful for:
-
-- **Performance**: Expensive computed fields are only calculated when needed
-- **API flexibility**: Frontend can request additional data without changing default payload
-- **Separation**: REST-only data doesn't clutter UI field definitions
+            return None
 
 Usage example::
 
@@ -1119,117 +1117,4 @@ Sometimes the parent relationship uses a different attribute name. You can overr
 
     class CustomerMobileDeviceUiPattern(CustomerMobileDevicePattern, UiPattern):
         pass
-
-Pattern for Generic Foreign Keys
----------------------------------
-
-For resources with generic foreign keys (e.g., comments that can belong to multiple model types):
-
-.. code-block:: python
-
-    from typing import Protocol
-
-    class CustomerPatternProtocol(Protocol):
-        url_prefix: str
-        url_pattern: str
-
-
-    class CustomerCommentBasePattern(CustomerPatternProtocol):
-        """Pattern for comments which don't have a direct customer relationship."""
-
-        def _get_try_kwargs(self, request: WSGIRequest, obj) -> dict[str, Any]:
-            kwargs = super()._get_try_kwargs(request, obj)  # type: ignore[misc]
-            regex = r"(?P<customer_pk>[-\d]+)"
-
-            if regex in self.url_prefix or regex in self.url_pattern:
-                # For comments, always get customer_pk from request, not object
-                kwargs["customer_pk"] = (
-                    request.kwargs.get("customer_pk")
-                    if hasattr(request, "kwargs")
-                    else None
-                )
-            return kwargs
-
-
-    class CustomerCommentRestPattern(CustomerCommentBasePattern, RestPattern):
-        pass
-
-Comparison: Django Admin vs Django IS Core
--------------------------------------------
-
-To illustrate the architectural difference, here's how nested resources are handled:
-
-**Django Admin Approach (Inline-Only):**
-
-.. code-block:: python
-
-    # admin.py - Everything must be in one place
-    from django.contrib import admin
-
-    class MobileDeviceInline(admin.TabularInline):
-        model = MobileDevice
-        extra = 0
-        # Limited to inline functionality only
-        # No independent list view, no REST API, no filters
-
-    @admin.register(Customer)
-    class CustomerAdmin(admin.ModelAdmin):
-        list_display = ['name', 'email']
-        inlines = [MobileDeviceInline]  # Tightly coupled
-
-    # Result: Devices only exist within customer detail page
-    # URL: /admin/customers/customer/123/change/
-    # No way to have /admin/customers/customer/123/devices/ with full list view
-
-**Django IS Core Approach (Separate Cores):**
-
-.. code-block:: python
-
-    # cores/customer/__init__.py - Parent core
-    class CustomerCore(DjangoUiRestCore):
-        model = Customer
-        list_fields = ('id', 'name', 'email')
-
-    # cores/customer/device.py - Independent core
-    class CustomerMobileDeviceCore(DjangoUiRestCore):
-        model = MobileDevice
-        list_fields = ('id', 'name', 'is_active', 'last_login')
-
-        # Custom patterns enable nested URLs
-        default_rest_pattern_class = CustomerRestPattern
-        default_ui_pattern_class = CustomerUiPattern
-
-        def get_url_prefix(self) -> str:
-            return r"customer/(?P<customer_pk>[-\d]+)/device"
-
-        def get_queryset(self, request: WSGIRequest) -> QuerySet:
-            return super().get_queryset(request).filter(
-                user_id=request.kwargs.get('customer_pk')
-            )
-
-    # Result: Full-featured device management
-    # URL: /customer/123/devices/ - Complete list view
-    # REST: /api/customer/123/devices/ - Full REST API
-    # Export: /api/customer/123/devices/export/ - Excel/CSV
-    # Filters: All standard filters work
-    # Permissions: Independent permission system
-
-**What This Provides:**
-
-1. Nested resources get all standard features (export, search, pagination, actions)
-2. List, detail, add, edit views for nested resources
-3. Full CRUD REST API at nested endpoints
-4. Separate forms, permissions, filters per resource
-5. Direct navigation to ``/customer/123/devices/``
-6. Self-contained, independently testable cores
-
-**Real-World Example:**
-
-In the example_customers application, CustomerCore doesn't define device management at all. Instead:
-
-- ``CustomerMobileDeviceCore`` in ``cores/customer/device.py`` handles all device logic
-- ``CustomerLimitChangeCore`` in ``cores/customer/limit_change.py`` handles limit changes
-- ``CustomerCommentCore`` in ``cores/customer/comment.py`` handles comments
-
-Each gets full UI, REST API, export, and independent evolution—all while maintaining the nested URL structure through custom patterns.
 

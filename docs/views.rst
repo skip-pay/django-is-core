@@ -194,9 +194,57 @@ Generic form views for various use cases.
 BulkChangeFormView
 ^^^^^^^^^^^^^^^^^^
 
-Allows bulk editing of multiple objects at once.
+Allows bulk editing of multiple objects at once from a table view. Users can select multiple rows in a ``DjangoTableView`` and apply changes to all selected objects simultaneously.
 
-**Use case:** Change status of multiple articles from "draft" to "published"
+**Use case:** Select multiple articles in a table view and change their status from "draft" to "published" in one operation.
+
+.. note::
+   Bulk change functionality is only available for **table views** (``DjangoTableView``). It appears as a button/action in the table interface when enabled.
+
+**Configuration in Core:**
+
+To enable bulk change functionality, you must configure it in your Core class:
+
+``bulk_change_enabled``
+  Set to ``True`` to enable bulk change functionality (default: ``False``)
+
+``bulk_change_fields``
+  Tuple of field names that can be bulk edited
+
+Example::
+
+    from is_core.main import DjangoUiRestCore
+
+    class ArticleCore(DjangoUiRestCore):
+        model = Article
+
+        # Enable bulk change functionality
+        bulk_change_enabled = True
+
+        # Specify which fields can be bulk edited
+        bulk_change_fields = ('status', 'category', 'author')
+
+        list_fields = ('title', 'status', 'author', 'published_at')
+
+You can also dynamically control bulk change fields by overriding ``get_bulk_change_fields``::
+
+    class ArticleCore(DjangoUiRestCore):
+        model = Article
+        bulk_change_enabled = True
+
+        def get_bulk_change_fields(self, request):
+            fields = ['status', 'category']
+            if request.user.is_superuser:
+                fields.append('author')
+            return fields
+
+To disable bulk changes for a specific table view (even when enabled in Core)::
+
+    class ArticleTableView(DjangoTableView):
+        model = Article
+
+        def is_bulk_change_enabled(self):
+            return False
 
 DjangoCoreFormView
 ^^^^^^^^^^^^^^^^^^
