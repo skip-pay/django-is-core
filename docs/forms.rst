@@ -509,3 +509,166 @@ Best Practices
 6. **Use custom widgets** for specialized input types (date pickers, file uploads, etc.)
 
 7. **Test form validation** thoroughly, especially for complex multi-field validation
+
+Custom Fieldsets Organization
+==============================
+
+Fieldsets control the layout and grouping of form fields in detail views. Django IS Core extends Django's fieldset system with responsive CSS classes and additional configuration options.
+
+Multi-Column Layouts
+--------------------
+
+Use Bootstrap grid classes to create responsive multi-column layouts:
+
+.. code-block:: python
+
+    from is_core.main import DjangoUiRestCore
+
+
+    class BankTransferRefundOrderCore(DjangoUiRestCore):
+        model = BankTransferRefundOrder
+
+        fieldsets = (
+            (None, {
+                'fields': ('id', 'created_at', 'report__created_at', 'state', 'country', 'value'),
+                'class': 'col-lg-6 col-sm-12 col-details',
+            }),
+            (None, {
+                'fields': ('customer', 'refunded_product', 'report', 'iban', 'swift_bic'),
+                'class': 'col-lg-6 col-sm-12 col-details',
+            }),
+        )
+
+This creates a two-column layout on large screens that stacks on small screens.
+
+Responsive Column Classes
+--------------------------
+
+Available Bootstrap classes:
+
+.. code-block:: python
+
+    # Full width
+    'class': 'col-12'
+
+    # Half width on large screens, full on small
+    'class': 'col-lg-6 col-sm-12'
+
+    # Third width on large, half on medium, full on small
+    'class': 'col-lg-4 col-md-6 col-sm-12'
+
+    # Standard detail view columns
+    'class': 'col-lg-6 col-sm-4 col-details'
+
+Collapsible Fieldsets
+----------------------
+
+Use the ``collapse`` class to make fieldsets initially collapsed:
+
+.. code-block:: python
+
+    class CustomerCore(DjangoUiRestCore):
+        fieldsets = (
+            (_l('Basic Information'), {
+                'fields': ('first_name', 'last_name', 'email'),
+            }),
+            (_l('Advanced Settings'), {
+                'fields': ('api_key', 'webhook_url', 'custom_config'),
+                'classes': ('collapse',),  # Note: 'classes' not 'class'
+            }),
+        )
+
+The ``classes`` parameter (plural) is used for special Bootstrap classes like ``collapse``.
+
+Fieldsets with Inline Views
+----------------------------
+
+Mix regular fields with inline views:
+
+.. code-block:: python
+
+    class CustomerDetailView(DjangoDetailFormView):
+        fieldsets = (
+            (_l('Personal Information'), {
+                'fields': ('first_name', 'last_name', 'birth_date'),
+                'class': 'col-lg-6',
+            }),
+            (_l('Contact Information'), {
+                'fields': ('email', 'phone'),
+                'class': 'col-lg-6',
+            }),
+            # Full-width inline view
+            (_l('Addresses'), {
+                'inline_view': CustomerAddressInlineTableView,
+                'class': 'col-12',
+            }),
+        )
+
+Dynamic Fieldsets
+-----------------
+
+Generate fieldsets based on object state or permissions:
+
+.. code-block:: python
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from django.http import HttpRequest
+
+
+    class CustomerDetailView(DjangoDetailFormView):
+        def get_fieldsets(
+            self,
+            request: HttpRequest | None = None,
+            obj: Customer | None = None
+        ) -> tuple:
+            fieldsets = [
+                (_l('Basic Info'), {
+                    'fields': ('first_name', 'last_name'),
+                    'class': 'col-lg-6',
+                }),
+            ]
+
+            # Add financial fieldset only for verified customers
+            if obj and obj.is_verified:
+                fieldsets.append(
+                    (_l('Financial Information'), {
+                        'fields': ('account_balance', 'credit_limit'),
+                        'class': 'col-lg-6',
+                    })
+                )
+
+            # Add admin fieldset for staff
+            if request and request.user.is_staff:
+                fieldsets.append(
+                    (_l('Admin'), {
+                        'fields': ('is_active', 'internal_notes'),
+                        'classes': ('collapse',),
+                    })
+                )
+
+            return tuple(fieldsets)
+
+Using fieldsets_postfix
+------------------------
+
+Append fieldsets to inherited configurations:
+
+.. code-block:: python
+
+    from user_comments.contrib.is_core.cores import CommentCoreMixin
+
+
+    class CustomerDetailView(CommentCoreMixin, DjangoDetailFormView):
+        # Base fields from parent
+        fields = ('first_name', 'last_name', 'email')
+
+        # Append after parent's fieldsets
+        fieldsets_postfix = CommentCoreMixin.notes_fieldset + (
+            (_l('Bank Accounts'), {
+                'inline_view': CustomerBankAccountInlineTableView,
+            }),
+        )
+
+This preserves the parent's fieldset configuration while adding your own.

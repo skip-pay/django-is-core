@@ -393,3 +393,242 @@ Fields can be restricted with permissions too. You can define readonly or editab
         )
 
 Generated views and REST resources will have restricted fields according to defined permissions. For the example only superuser can read and edit field ``is_superuser`` and only superuser can edit field ``username``.  The permissions restrict defined fields in export, REST views, UI views or bulk change view.
+
+Field-Level Permissions Implementation
+=======================================
+
+Field-level permissions allow you to control which fields users can view or edit based on their permissions. This is implemented using dynamic ``readonly_fields`` modification and permission checking in views.
+
+Dynamic Readonly Fields
+------------------------
+
+Override ``get_readonly_fields()`` to make fields read-only based on permissions:
+
+.. code-block:: python
+    :caption: cores/customer/views.py
+
+    from typing import TYPE_CHECKING
+    from is_core.generic_views.detail_views import DjangoDetailFormView
+
+    if TYPE_CHECKING:
+        from django.http import HttpRequest
+        from common.apps.customers.models import Customer
+
+
+    class CustomerDetailView(DjangoDetailFormView):
+        form_class = CustomerEditForm
+
+        def get_readonly_fields(
+            self,
+            request: HttpRequest,
+            obj: Customer | None = None
+        ) -> tuple[str, ...]:
+            readonly_fields = list(super().get_readonly_fields(request, obj))
+
+            # Make personal_id readonly unless user has specific permission
+            if not request.user.has_perm('customers.change_personal_id'):
+                readonly_fields.extend(['personal_id', 'id_card_no', 'id_card_expiry_date'])
+
+            # Make admin fields readonly for non-admins
+            if not request.user.is_staff:
+                readonly_fields.extend(['is_active', 'internal_notes'])
+
+            return tuple(readonly_fields)
+
+Conditional Field Visibility
+-----------------------------
+
+Remove fields entirely based on permissions:
+
+.. code-block:: python
+
+    class CustomerDetailView(DjangoDetailFormView):
+        def get_fields(
+            self,
+            request: HttpRequest,
+            obj: Customer | None = None
+        ) -> tuple[str, ...]:
+            fields = list(super().get_fields(request, obj))
+
+            # Remove sensitive fields for non-superusers
+            if not request.user.is_superuser:
+                fields = [f for f in fields if f not in ('internal_id', 'test_account_flag')]
+
+            return tuple(fields)
+
+Using FieldsPermission
+----------------------
+
+Use ``FieldsPermission`` for declarative field-level control:
+
+.. code-block:: python
+
+    from is_core.auth.permissions import FieldsPermission
+
+
+    class CustomerDetailView(DjangoDetailFormView):
+        permission = FieldsPermission(
+            read_permission='customers.view_customer',
+            write_permission='customers.change_customer',
+            readonly_fields={
+                'personal_id': 'customers.change_personal_id',
+                'points': 'customers.change_points',
+            }
+        )
+
+This makes ``personal_id`` and ``points`` readonly unless the user has the specific permissions.
+
+Using FieldsSetPermission
+--------------------------
+
+Group fields with different permission requirements:
+
+.. code-block:: python
+
+    from is_core.auth.permissions import FieldsSetPermission
+
+
+    class CustomerDetailView(DjangoDetailFormView):
+        permission = FieldsSetPermission(
+            read=(
+                ('customers.view_customer', ('first_name', 'last_name', 'email')),
+                ('customers.view_customer_sensitive', ('personal_id', 'birth_date')),
+            ),
+            write=(
+                ('customers.change_customer', ('first_name', 'last_name')),
+                ('customers.change_customer_sensitive', ('personal_id',)),
+            )
+        )
+
+Users need ``view_customer_sensitive`` permission to see ``personal_id`` and ``birth_date``, and ``change_customer_sensitive`` to edit ``personal_id``.
+
+Fieldset-Level Permissions
+---------------------------
+
+Control visibility of entire fieldsets:
+
+.. code-block:: python
+
+    class CustomerDetailView(DjangoDetailFormView):
+        def get_fieldsets(
+            self,
+            request: HttpRequest | None = None,
+            obj: Customer | None = None
+        ) -> tuple:
+            fieldsets = [
+                (_l('Basic Information'), {
+                    'fields': ('first_name', 'last_name', 'email'),
+                }),
+            ]
+
+            # Only show admin fieldset to staff
+            if request and request.user.is_staff:
+                fieldsets.append(
+                    (_l('Admin Settings'), {
+                        'fields': ('is_active', 'internal_notes', 'test_flag'),
+                        'classes': ('collapse',),
+                    })
+                )
+
+            return tuple(fieldsets)
+
+Permission Sets with FPerms Integration
+========================================
+
+Django IS Core integrates with ``django-fperms`` for object-level permissions. The ``fperms-iscore`` package provides ``FPermPermission`` for fine-grained access control.
+
+Basic FPermPermission Usage
+----------------------------
+
+Use ``FPermPermission`` to check for specific permissions:
+
+.. code-block:: python
+    :caption: cores/customer/resources.py
+
+    from fperms_iscore.permissions import FPermPermission
+    from is_core.auth.permissions import PermissionsSet
+    from is_core.contrib.background_export.resource import CeleryDjangoCoreResource
+
+
+    class SetCustomerABTestingCategoryResource(CeleryDjangoCoreResource):
+        model = CustomerABTesting
+
+        permission = PermissionsSet(
+            post=FPermPermission(
+                "customerabtesting__set_category_to_existing_customers",
+                verbose_name=_l("Can set A/B testing categories to existing customers"),
+            ),
+            get=SelfPermission("post"),
+        )
+
+        def post(self):
+            # Only users with the fperm can execute this
+            get_django_command_task("set_customer_ab_testing_category").apply_async_on_commit()
+            return RestOkResponse(_g("Assignment in progress."))
+
+Permission Naming Convention
+-----------------------------
+
+FPerms use a specific naming format: ``model__action_description``
+
+.. code-block:: python
+
+    # Format: {model_name}__{action_description}
+    FPermPermission("customer__export_sensitive_data")
+    FPermPermission("order__approve_refund")
+    FPermPermission("billing__override_payment")
+
+Combining Permissions
+----------------------
+
+Use ``PermissionsSet`` to set different permissions per HTTP method:
+
+.. code-block:: python
+
+    from is_core.auth.permissions import PermissionsSet, SelfPermission
+
+
+    class CustomerResource(CeleryDjangoCoreResource):
+        permission = PermissionsSet(
+            get=FPermPermission("customer__view_details"),
+            post=FPermPermission("customer__create"),
+            put=FPermPermission("customer__update"),
+            delete=FPermPermission("customer__delete"),
+        )
+
+SelfPermission Shortcut
+------------------------
+
+Use ``SelfPermission`` to reuse another method's permission:
+
+.. code-block:: python
+
+    class CustomerResource(CeleryDjangoCoreResource):
+        permission = PermissionsSet(
+            post=FPermPermission("customer__bulk_update"),
+            get=SelfPermission("post"),  # GET requires same permission as POST
+        )
+
+This is useful for custom actions where GET should require the same permission as the action itself.
+
+View-Level FPermPermission
+---------------------------
+
+Apply FPerms to view classes:
+
+.. code-block:: python
+
+    from is_core.generic_views.detail_views import DjangoDetailFormView
+
+
+    class CustomerDetailView(DjangoDetailFormView):
+        permission = FPermPermission("customer__view_sensitive_data")
+
+        def get_readonly_fields(self, request, obj=None):
+            readonly = list(super().get_readonly_fields(request, obj))
+
+            # Additional granular control
+            if not request.user.has_perm('customer__edit_personal_id'):
+                readonly.append('personal_id')
+
+            return tuple(readonly)
