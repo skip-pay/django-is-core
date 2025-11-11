@@ -955,3 +955,281 @@ The atribute inside response has named ``_class_names``.
 .. attribute:: DjangoRestCore.rest_resource_class
 
 A default resource class is ``RESTModelResource``. You can change it with this attribute.
+
+Custom URL Patterns for Nested Resources
+=========================================
+
+Django IS Core allows you to register nested resources (e.g., ``/customer/{id}/devices/``) in **separate, independent cores** rather than defining them as inlines within the parent core. This is accomplished through custom URL patterns.
+
+Separate Core Registration
+---------------------------
+
+Unlike Django Admin where related objects must be defined as inlines within the parent ModelAdmin, Django IS Core allows you to:
+
+**✅ Register a separate core for the nested resource:**
+
+.. code-block:: python
+
+    # cores/customer/__init__.py - Parent core
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+        list_fields = ('id', 'name', 'email')
+        # No need to define devices here!
+
+    # cores/customer/device.py - Separate core for nested resource
+    class CustomerMobileDeviceCore(DjangoUiRestCore):
+        model = MobileDevice
+        list_fields = ('id', 'name', 'is_active')
+        # This is its own independent core with full functionality
+
+This separation provides loose coupling between parent and child resources:
+
+- Each resource has its own file, views, forms, permissions
+- The device core has its own REST API, list views, filters
+- The same device core can be used in different contexts
+- Changes to device logic don't affect customer core
+- Nested resources get all core features (export, permissions, actions)
+
+Custom patterns enable this by solving the URL routing problem:
+
+- **URL construction**: Generate URLs like ``/customer/123/devices/456/`` from a device object
+- **Parameter extraction**: Extract ``customer_pk`` from URLs for filtering
+- **Link generation**: Create correct links in list views and forms
+- **Breadcrumb navigation**: Maintain proper parent-child relationships in UI
+
+Without custom patterns, you'd need to either:
+
+1. Put everything in the parent core (tight coupling)
+2. Use flat URLs like ``/devices/456/`` (losing parent context) or restructured URLs like ``/devices/customer/123/`` (works, but custom patterns help organize resources more naturally around their parent)
+3. Write complex custom URL resolution logic everywhere (not DRY)
+
+Basic Pattern Customization
+----------------------------
+
+Here's how to create custom pattern classes for a nested resource:
+
+.. code-block:: python
+    :caption: cores/customer/patterns.py
+
+    from typing import Any
+    from django.core.handlers.wsgi import WSGIRequest
+    from is_core.patterns import RestPattern, UiPattern
+
+    class CustomerPattern:
+        """Base mixin for customer-scoped patterns."""
+
+        def _get_customer_from_obj(self, obj) -> int:
+            """Extract customer ID from the object."""
+            return obj.customer_id
+
+        def _get_try_kwargs(self, request: WSGIRequest, obj) -> dict[str, Any]:
+            """Override to inject customer_pk into URL kwargs."""
+            kwargs = super()._get_try_kwargs(request, obj)
+            regex = r"(?P<customer_pk>[-\d]+)"
+
+            if regex in self.url_prefix or regex in self.url_pattern:
+                kwargs["customer_pk"] = (
+                    self._get_customer_from_obj(obj)
+                    if obj
+                    else request.kwargs.get("customer_pk")
+                )
+            return kwargs
+
+
+    class CustomerRestPattern(CustomerPattern, RestPattern):
+        """REST pattern for customer-scoped resources."""
+        pass
+
+
+    class CustomerUiPattern(CustomerPattern, UiPattern):
+        """UI pattern for customer-scoped resources."""
+        pass
+
+Using Custom Patterns in Cores
+-------------------------------
+
+Apply your custom patterns to a core using ``default_rest_pattern_class`` and ``default_ui_pattern_class``:
+
+.. code-block:: python
+    :caption: cores/customer/device.py
+
+    from typing import TYPE_CHECKING
+    from django.shortcuts import resolve_url
+    from is_core.main import DjangoUiRestCore
+    from .patterns import CustomerRestPattern, CustomerUiPattern
+
+    if TYPE_CHECKING:
+        from django.core.handlers.wsgi import WSGIRequest
+        from django.db.models import QuerySet
+
+
+    class CustomerMobileDeviceCore(DjangoUiRestCore):
+        model = MobileDevice
+
+        # Use custom patterns for URL generation
+        default_rest_pattern_class = CustomerRestPattern
+        default_ui_pattern_class = CustomerUiPattern
+
+        list_fields = ('id', 'name', 'created_at', 'is_active')
+
+        def get_queryset(self, request: WSGIRequest) -> QuerySet:
+            """Filter devices by customer from URL."""
+            return super().get_queryset(request).filter(
+                user_id=request.kwargs.get('customer_pk')
+            )
+
+        def get_url_prefix(self) -> str:
+            """Define nested URL structure."""
+            return r"customer/(?P<customer_pk>[-\d]+)/{}".format(
+                "/".join(self.get_menu_groups())
+            )
+
+        def get_api_url(self, request: WSGIRequest) -> str:
+            """Generate list API URL with customer_pk."""
+            return resolve_url(
+                self.get_api_url_name(),
+                customer_pk=request.kwargs.get('customer_pk')
+            )
+
+        def get_api_detail_url(self, request: WSGIRequest, obj) -> str:
+            """Generate detail API URL with customer_pk and object pk."""
+            return resolve_url(
+                self.get_api_detail_url_name(),
+                customer_pk=request.kwargs.get('customer_pk'),
+                pk=obj.pk
+            )
+
+Advanced Pattern: Different Attribute Names
+--------------------------------------------
+
+Sometimes the parent relationship uses a different attribute name. You can override ``_get_customer_from_obj``:
+
+.. code-block:: python
+
+    class CustomerMobileDevicePattern(CustomerPattern):
+        """Pattern for mobile devices which use user_id instead of customer_id."""
+
+        def _get_customer_from_obj(self, obj) -> int:
+            return obj.user_id  # Different attribute name
+
+
+    class CustomerMobileDeviceRestPattern(CustomerMobileDevicePattern, RestPattern):
+        pass
+
+
+    class CustomerMobileDeviceUiPattern(CustomerMobileDevicePattern, UiPattern):
+        pass
+
+Pattern for Generic Foreign Keys
+---------------------------------
+
+For resources with generic foreign keys (e.g., comments that can belong to multiple model types):
+
+.. code-block:: python
+
+    from typing import Protocol
+
+    class CustomerPatternProtocol(Protocol):
+        url_prefix: str
+        url_pattern: str
+
+
+    class CustomerCommentBasePattern(CustomerPatternProtocol):
+        """Pattern for comments which don't have a direct customer relationship."""
+
+        def _get_try_kwargs(self, request: WSGIRequest, obj) -> dict[str, Any]:
+            kwargs = super()._get_try_kwargs(request, obj)  # type: ignore[misc]
+            regex = r"(?P<customer_pk>[-\d]+)"
+
+            if regex in self.url_prefix or regex in self.url_pattern:
+                # For comments, always get customer_pk from request, not object
+                kwargs["customer_pk"] = (
+                    request.kwargs.get("customer_pk")
+                    if hasattr(request, "kwargs")
+                    else None
+                )
+            return kwargs
+
+
+    class CustomerCommentRestPattern(CustomerCommentBasePattern, RestPattern):
+        pass
+
+Comparison: Django Admin vs Django IS Core
+-------------------------------------------
+
+To illustrate the architectural difference, here's how nested resources are handled:
+
+**Django Admin Approach (Inline-Only):**
+
+.. code-block:: python
+
+    # admin.py - Everything must be in one place
+    from django.contrib import admin
+
+    class MobileDeviceInline(admin.TabularInline):
+        model = MobileDevice
+        extra = 0
+        # Limited to inline functionality only
+        # No independent list view, no REST API, no filters
+
+    @admin.register(Customer)
+    class CustomerAdmin(admin.ModelAdmin):
+        list_display = ['name', 'email']
+        inlines = [MobileDeviceInline]  # Tightly coupled
+
+    # Result: Devices only exist within customer detail page
+    # URL: /admin/customers/customer/123/change/
+    # No way to have /admin/customers/customer/123/devices/ with full list view
+
+**Django IS Core Approach (Separate Cores):**
+
+.. code-block:: python
+
+    # cores/customer/__init__.py - Parent core
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+        list_fields = ('id', 'name', 'email')
+
+    # cores/customer/device.py - Independent core
+    class CustomerMobileDeviceCore(DjangoUiRestCore):
+        model = MobileDevice
+        list_fields = ('id', 'name', 'is_active', 'last_login')
+
+        # Custom patterns enable nested URLs
+        default_rest_pattern_class = CustomerRestPattern
+        default_ui_pattern_class = CustomerUiPattern
+
+        def get_url_prefix(self) -> str:
+            return r"customer/(?P<customer_pk>[-\d]+)/device"
+
+        def get_queryset(self, request: WSGIRequest) -> QuerySet:
+            return super().get_queryset(request).filter(
+                user_id=request.kwargs.get('customer_pk')
+            )
+
+    # Result: Full-featured device management
+    # URL: /customer/123/devices/ - Complete list view
+    # REST: /api/customer/123/devices/ - Full REST API
+    # Export: /api/customer/123/devices/export/ - Excel/CSV
+    # Filters: All standard filters work
+    # Permissions: Independent permission system
+
+**What This Provides:**
+
+1. Nested resources get all standard features (export, search, pagination, actions)
+2. List, detail, add, edit views for nested resources
+3. Full CRUD REST API at nested endpoints
+4. Separate forms, permissions, filters per resource
+5. Direct navigation to ``/customer/123/devices/``
+6. Self-contained, independently testable cores
+
+**Real-World Example:**
+
+In the example_customers application, CustomerCore doesn't define device management at all. Instead:
+
+- ``CustomerMobileDeviceCore`` in ``cores/customer/device.py`` handles all device logic
+- ``CustomerLimitChangeCore`` in ``cores/customer/limit_change.py`` handles limit changes
+- ``CustomerCommentCore`` in ``cores/customer/comment.py`` handles comments
+
+Each gets full UI, REST API, export, and independent evolution—all while maintaining the nested URL structure through custom patterns.
+

@@ -699,3 +699,298 @@ Best Practices
 9. **Version your API** if you plan to make breaking changes
 
 10. **Test REST endpoints** thoroughly, including error cases and edge conditions
+
+Celery Background Export Integration
+=====================================
+
+Django IS Core integrates with Celery to handle large dataset exports in the background. The ``CeleryDjangoCoreResource`` class processes export requests asynchronously, preventing timeouts on large queries.
+
+When to Use Background Export
+------------------------------
+
+Background export is useful when:
+
+- Exporting large datasets that take more than a few seconds
+- You want to avoid request timeouts
+- Users need to continue working while export processes
+- Export results should be emailed or stored for later download
+
+Basic Setup
+-----------
+
+Extend ``CeleryDjangoCoreResource`` instead of the standard resource class:
+
+.. code-block:: python
+    :caption: cores/customer/resources.py
+
+    from typing import TYPE_CHECKING
+    from is_core.contrib.background_export.resource import CeleryDjangoCoreResource
+    from is_core.utils.decorators import short_description
+
+    if TYPE_CHECKING:
+        from django.db.models import QuerySet
+        from common.apps.customers.models import Customer
+
+
+    class CustomerResource(CeleryDjangoCoreResource):
+        model = Customer
+
+        @short_description(_l("Coin balance"))
+        def coin_balance(self, obj: Customer) -> int:
+            """Computed field included in export."""
+            return CoinTransaction.objects.compute_balance_for_customer(obj)
+
+Using in Cores
+--------------
+
+Apply the resource to your core:
+
+.. code-block:: python
+    :caption: cores/customer/__init__.py
+
+    from is_core.main import DjangoUiRestCore
+    from .resources import CustomerResource
+
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+        rest_resource_class = CustomerResource
+
+        list_fields = ('id', 'full_name', 'email', 'coin_balance')
+        rest_extra_fields = ('coin_balance',)
+
+When users click the export button, the task runs in the background and they receive a notification when complete.
+
+Export Configuration
+--------------------
+
+Configure background export behavior in Django settings:
+
+.. code-block:: python
+    :caption: settings.py
+
+    # Background export settings
+    IS_CORE_BACKGROUND_EXPORT_ENABLED = True
+    IS_CORE_BACKGROUND_EXPORT_TASK_EXPIRES = 3600  # Task expires after 1 hour
+    IS_CORE_BACKGROUND_EXPORT_FILE_EXPIRES = 86400  # File available for 24 hours
+
+    # Optional: Callback before export starts
+    IS_CORE_BACKGROUND_EXPORT_TASK_CALLBACK = 'your.module.log_export_start'
+
+Export Callback Hook
+--------------------
+
+Execute custom logic before export starts:
+
+.. code-block:: python
+    :caption: your/module.py
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from django.http import HttpRequest
+        from django.db.models import QuerySet
+
+
+    def log_export_start(
+        request: HttpRequest,
+        queryset: QuerySet,
+        filename: str,
+        **kwargs
+    ) -> None:
+        """Called before export task starts."""
+        logger.info(
+            f"User {request.user.id} exporting {queryset.count()} records to {filename}"
+        )
+
+Custom Resource Actions
+========================
+
+Resources can define custom POST/PUT/DELETE methods beyond standard CRUD operations. This is useful for triggering background tasks, running calculations, or executing business logic.
+
+Defining Custom Actions
+------------------------
+
+Add custom methods to your resource:
+
+.. code-block:: python
+    :caption: cores/customer/resources.py
+
+    from django.utils.translation import gettext as _g
+    from django_celery_extensions.task import get_django_command_task
+    from is_core.auth.permissions import PermissionsSet
+    from is_core.contrib.background_export.resource import CeleryDjangoCoreResource
+    from fperms_iscore.permissions import FPermPermission
+    from pyston.response import RestOkResponse
+
+
+    class SetCustomerABTestingCategoryResource(CeleryDjangoCoreResource):
+        model = CustomerABTesting
+
+        permission = PermissionsSet(
+            post=FPermPermission(
+                "customerabtesting__set_category_to_existing_customers",
+                verbose_name=_l("Can set A/B testing categories"),
+            ),
+            get=SelfPermission("post"),  # GET requires same permission as POST
+        )
+
+        def post(self) -> RestOkResponse:
+            """Trigger background task to set A/B testing categories."""
+            get_django_command_task("set_customer_ab_testing_category").apply_async_on_commit()
+            return RestOkResponse(
+                _g("Assigning A/B testing categories to existing customers in progress.")
+            )
+
+Registering Custom Actions
+---------------------------
+
+Register the action in your core using ``get_rest_patterns()``:
+
+.. code-block:: python
+    :caption: cores/customer/__init__.py
+
+    from is_core.patterns import RestPattern
+
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        def get_rest_patterns(self):
+            rest_patterns = super().get_rest_patterns()
+
+            rest_patterns["set-ab-testing"] = RestPattern(
+                "set-ab-testing-customer",
+                self.site_name,
+                r"set-ab-testing/",
+                SetCustomerABTestingCategoryResource,
+                self,
+                methods=["post"],
+            )
+
+            return rest_patterns
+
+This creates endpoint: ``POST /api/customer/set-ab-testing/``
+
+Using Custom Actions
+---------------------
+
+Custom actions can be triggered from list actions or custom UI buttons:
+
+.. code-block:: python
+
+    from is_core.generic_views.actions import RestAction
+
+
+    class CustomerCore(DjangoUiRestCore):
+        def get_list_actions(self, request, obj=None):
+            actions = super().get_list_actions(request, obj)
+
+            actions.append(
+                RestAction(
+                    verbose_name=_l("Set A/B Testing"),
+                    url=self.get_rest_pattern_url("set-ab-testing"),
+                    method="POST",
+                    confirm=_l("Start A/B testing assignment for all customers?"),
+                )
+            )
+
+            return actions
+
+Resource Field Decorators
+==========================
+
+Django IS Core provides decorators to enhance resource fields with filtering and sorting capabilities. These decorators work with ``rest_extra_fields`` to expose computed properties via the REST API.
+
+@short_description Decorator
+-----------------------------
+
+Provides a human-readable label for the field:
+
+.. code-block:: python
+
+    from is_core.utils.decorators import short_description
+
+
+    class CustomerResource(CeleryDjangoCoreResource):
+        @short_description(_l("Total orders"))
+        def total_orders(self, obj: Customer) -> int:
+            return obj.orders.count()
+
+@filter_class Decorator
+------------------------
+
+Enables filtering on computed fields:
+
+.. code-block:: python
+
+    from pyston.utils.decorators import filter_class
+    from admin.apps.utils.filters import ValueWithCurrencyFilter
+
+
+    class BankTransferRefundOrderResource(CeleryDjangoCoreResource):
+        @short_description(_l("Amount"))
+        @filter_class(ValueWithCurrencyFilter)
+        def value_with_filtering(self, obj: BankTransferRefundOrder):
+            return obj.value
+
+This allows filtering: ``GET /api/refunds/?value_with_filtering__gte=1000``
+
+@sorter_class Decorator
+------------------------
+
+Enables sorting on computed fields:
+
+.. code-block:: python
+
+    from pyston.utils.decorators import sorter_class
+    from admin.apps.utils.sorters import ValueWithCurrencySorter
+
+
+    class BankTransferRefundOrderResource(CeleryDjangoCoreResource):
+        @short_description(_l("Amount"))
+        @filter_class(ValueWithCurrencyFilter)
+        @sorter_class(ValueWithCurrencySorter)
+        def value_with_filtering(self, obj: BankTransferRefundOrder):
+            return obj.value
+
+This allows sorting: ``GET /api/refunds/?order=value_with_filtering``
+
+Combining Decorators
+--------------------
+
+Stack decorators to provide full functionality:
+
+.. code-block:: python
+
+    class CustomerResource(CeleryDjangoCoreResource):
+        @short_description(_l("Account balance"))
+        @filter_class(MoneyFilter)
+        @sorter_class(MoneySorter)
+        def account_balance(self, obj: Customer):
+            return obj.calculate_balance()
+
+Using with rest_extra_fields
+-----------------------------
+
+Expose decorated fields via ``rest_extra_fields``:
+
+.. code-block:: python
+
+    class BankTransferRefundOrderCore(DjangoUiRestCore):
+        model = BankTransferRefundOrder
+        rest_resource_class = BankTransferRefundOrderResource
+
+        list_fields = ('id', 'created_at', 'state', 'value_with_filtering')
+
+        rest_extra_fields = ('value_with_filtering',)
+        rest_extra_filter_fields = ('value_with_filtering',)
+
+        @short_description(_l("Amount"))
+        @filter_class(ValueWithCurrencyFilter)
+        @sorter_class(ValueWithCurrencySorter)
+        def value_with_filtering(self, obj):
+            return obj.value
+
+.. note::
+   When using decorators on computed fields, the decorators must be defined on the resource or core class that has ``rest_extra_fields`` configuration.

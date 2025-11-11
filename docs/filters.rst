@@ -307,17 +307,287 @@ Available filter operators:
 | lte              | ``field__lte``          | stock <= 10               |
 +------------------+-------------------------+---------------------------+
 
-Best Practices
---------------
+.. note::
+   Add database indexes on commonly filtered fields for better performance.
 
-.. tip::
-   **Performance Tip**: Filters generate database queries. Add database indexes on commonly filtered fields.
+Enum-Based Filters
+==================
 
-1. **Keep filters simple** - Users should understand what each filter does
-2. **Limit ForeignKey choices** - Use UIFilterMixin to prevent huge dropdowns
-3. **Set sensible defaults** - Use ``default_list_filter`` for common cases
-4. **Test performance** - Complex filters can slow down queries
-5. **Add help text** - Use field ``help_text`` to explain filter behavior
+Django IS Core integrates with `django-enumfields <https://github.com/hzdg/django-enumfields>`_, allowing you to create type-safe filters using Python enums. This pattern uses ``ChoicesEnum`` from enumfields to provide structured choices in filters.
 
-.. warning::
-   Filtering on non-indexed fields with large datasets can cause slow queries. Always add indexes for filtered fields.
+When to Use Enum-Based Filters
+-------------------------------
+
+Enum-based filters are useful when:
+
+- You need type-safe filter values checked at runtime and by type checkers
+- Filter choices are defined centrally to reduce duplication
+- You're filtering by ContentType for generic foreign keys
+- You want IDE autocomplete and refactoring support
+
+Basic Enum Filter
+-----------------
+
+Create an enum and a corresponding filter:
+
+.. code-block:: python
+
+    from typing import TYPE_CHECKING
+    from django.db.models import Q
+    from django.utils.translation import gettext_lazy as _l
+    from enumfields import Choice
+    from enumfields.enums import ChoicesEnum
+    from pyston.filters.utils import OperatorSlug
+
+    if TYPE_CHECKING:
+        from django.core.handlers.wsgi import WSGIRequest
+
+    # Define the enum
+    class CustomerCommentContentTypeEnum(ChoicesEnum):
+        ORDER = Choice('Order', _l('Order'))
+        CUSTOMER = Choice('Customer', _l('Customer'))
+        BILLING = Choice('Billing', _l('Billing'))
+        APPLICATION = Choice('Application', _l('Application'))
+
+    # Create the filter
+    from utils.models.filters import ChoicesEnumFilter
+
+    class CustomerCommentContentTypeFilter(ChoicesEnumFilter):
+        choice_enum = CustomerCommentContentTypeEnum
+        allowed_operators = (OperatorSlug.EQ,)
+
+        def get_filter_term(
+            self,
+            value: CustomerCommentContentTypeEnum,
+            operator_slug: str,
+            request: WSGIRequest
+        ) -> Q:
+            # Filter by the enum value
+            return Q(type=value.value)
+
+ContentType-Based Enum Filter
+------------------------------
+
+A common pattern is filtering generic foreign keys by ContentType using enums:
+
+.. code-block:: python
+
+    from django.contrib.contenttypes.models import ContentType
+    from common.apps.customers.models import Customer
+    from common.apps.commerce.models import Order, Application
+
+    class CommentableTypeEnum(ChoicesEnum):
+        """Enum for objects that can have comments."""
+        CUSTOMER = Choice(Customer, _l('Customer'))
+        ORDER = Choice(Order, _l('Order'))
+        APPLICATION = Choice(Application, _l('Application'))
+
+
+    class CommentContentTypeFilter(ChoicesEnumFilter):
+        choice_enum = CommentableTypeEnum
+        allowed_operators = (OperatorSlug.EQ,)
+
+        def get_filter_term(
+            self,
+            value: CommentableTypeEnum,
+            operator_slug: str,
+            request: WSGIRequest
+        ) -> Q:
+            # Get ContentType for the model class
+            model_ct = ContentType.objects.get_for_model(value.value)
+            return Q(content_type=model_ct)
+
+Using Enum Filters in Cores
+----------------------------
+
+Apply enum filters to resource fields using the ``@filter_class`` decorator:
+
+.. code-block:: python
+
+    from is_core.main import DjangoUiRestCore
+    from is_core.utils.decorators import short_description
+    from pyston.utils.decorators import filter_class
+
+    class CustomerCommentCore(DjangoUiRestCore):
+        model = Comment
+
+        list_fields = ('author', 'created_at', 'content_type_link', 'comment')
+
+        @short_description(_l('object'))
+        @filter_class(CommentContentTypeFilter)
+        def content_type_link(self, obj: Comment, request):
+            return render_model_object_with_link(request, obj.content_object)
+
+Complex Enum with Multiple Models
+----------------------------------
+
+For sophisticated filtering across multiple related models:
+
+.. code-block:: python
+
+    from common.apps.installments.models import InstallmentContract, InstallmentApplication
+    from common.apps.revolving_loan.models import RevolvingLoanContract, RevolvingLoanApplication
+
+    class FinancialProductTypeEnum(ChoicesEnum):
+        """Enum for all financial product types."""
+        INSTALLMENT_CONTRACT = Choice(InstallmentContract, _l('Installment contract'))
+        INSTALLMENT_APPLICATION = Choice(InstallmentApplication, _l('Installment application'))
+        REVOLVING_CONTRACT = Choice(RevolvingLoanContract, _l('Revolving loan contract'))
+        REVOLVING_APPLICATION = Choice(RevolvingLoanApplication, _l('Revolving loan application'))
+
+
+    class FinancialProductTypeFilter(ChoicesEnumFilter):
+        choice_enum = FinancialProductTypeEnum
+        allowed_operators = (OperatorSlug.EQ,)
+
+        def get_filter_term(
+            self,
+            value: FinancialProductTypeEnum,
+            operator_slug: str,
+            request: WSGIRequest
+        ) -> Q:
+            model_ct = ContentType.objects.get_for_model(value.value)
+            return Q(content_type=model_ct)
+
+.. note::
+   The ``choice_enum`` attribute automatically generates the ``choices`` list. Only define ``choices`` explicitly when you want to restrict the filter to a subset of enum values.
+
+JSON Field and Array Filters
+=============================
+
+PostgreSQL-specific fields like ``JSONField`` and ``ArrayField`` require specialized filtering approaches. Django IS Core supports these through custom filter implementations.
+
+PostgreSQL Array Filtering
+---------------------------
+
+Filter by values contained in PostgreSQL array fields:
+
+.. code-block:: python
+
+    from django.db.models import Q
+    from pyston.filters.django_filters import SimpleFilter
+    from pyston.filters.utils import OperatorSlug
+
+    class CustomerEnabledFeaturesFilter(SimpleFilter):
+        """Filter customers by enabled features stored in an ArrayField."""
+
+        allowed_operators = (OperatorSlug.EQ,)
+
+        def get_filter_term(
+            self,
+            value: int,
+            operator_slug: str,
+            request: WSGIRequest
+        ) -> Q:
+            # PostgreSQL array contains operator
+            return Q(enabled_features__contains=[value])
+
+Using Array Filters in Cores
+-----------------------------
+
+Apply array filters to fields that store lists:
+
+.. code-block:: python
+
+    from is_core.main import DjangoUiRestCore
+    from pyston.utils.decorators import filter_class
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        list_fields = ('id', 'full_name', 'email', 'enabled_features')
+
+        rest_extra_fields = ('enabled_features',)
+        rest_extra_filter_fields = ('enabled_features',)
+
+        @filter_class(CustomerEnabledFeaturesFilter)
+        @property
+        def enabled_features(self):
+            """Expose enabled_features for filtering."""
+            return None
+
+This allows filtering like: ``GET /api/customers/?enabled_features=5``
+
+JSON Field Filtering
+--------------------
+
+Filter by keys or values within JSON fields:
+
+.. code-block:: python
+
+    class JSONSettingsFilter(SimpleFilter):
+        """Filter by JSON field content."""
+
+        allowed_operators = (OperatorSlug.EQ, OperatorSlug.CONTAINS)
+
+        def get_filter_term(self, value: str, operator_slug: str, request) -> Q:
+            if operator_slug == OperatorSlug.EQ:
+                # Exact JSON key-value match
+                return Q(settings__theme=value)
+            elif operator_slug == OperatorSlug.CONTAINS:
+                # JSON field contains key
+                return Q(settings__has_key=value)
+            return Q()
+
+Array Overlap Filtering
+-----------------------
+
+Check if arrays have any common elements:
+
+.. code-block:: python
+
+    class TagsOverlapFilter(SimpleFilter):
+        """Filter objects with overlapping tags."""
+
+        allowed_operators = (OperatorSlug.EQ,)
+
+        def get_filter_term(self, value: str, operator_slug: str, request) -> Q:
+            # Split comma-separated tags
+            tags = [tag.strip() for tag in value.split(',')]
+            # PostgreSQL && operator (overlap)
+            return Q(tags__overlap=tags)
+
+Usage: ``GET /api/articles/?tags=python,django`` finds articles tagged with python OR django.
+
+Array Length Filtering
+----------------------
+
+Filter by array length:
+
+.. code-block:: python
+
+    from django.contrib.postgres.fields.array import ArrayField
+    from django.db.models import Q
+    from django.db.models.functions import Coalesce, JSONBArrayLength
+
+    class ArrayLengthFilter(SimpleFilter):
+        """Filter by number of items in array."""
+
+        allowed_operators = (OperatorSlug.GT, OperatorSlug.LT, OperatorSlug.EQ)
+
+        def get_filter_term(self, value: int, operator_slug: str, request) -> Q:
+            # Use annotated queryset
+            lookup = f'tags__len__{operator_slug}'
+            return Q(**{lookup: value})
+
+Multiple Array Values
+---------------------
+
+Filter where array contains ALL specified values:
+
+.. code-block:: python
+
+    class ArrayContainsAllFilter(SimpleFilter):
+        """Filter arrays containing all specified values."""
+
+        allowed_operators = (OperatorSlug.EQ,)
+
+        def get_filter_term(self, value: str, operator_slug: str, request) -> Q:
+            values = [int(v.strip()) for v in value.split(',')]
+            # PostgreSQL @> operator (contains)
+            return Q(feature_ids__contains=values)
+
+Usage: ``GET /api/customers/?feature_ids=1,2,3`` finds customers with features 1 AND 2 AND 3.
+
+.. note::
+   PostgreSQL-specific filters require GIN indexes on JSON/Array fields for optimal performance. Add indexes using ``opclasses=['gin_integer_ops']`` or similar for the field type.

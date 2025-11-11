@@ -214,7 +214,7 @@ Inline Views
 Inline views allow editing related objects within a parent object's detail page.
 
 .. note::
-   **Use Case**: Inline views are perfect for parent-child relationships like Order → Order Items, Article → Tags, or Invoice → Line Items.
+   **Use Case**: Inline views are suitable for parent-child relationships like Order → Order Items, Article → Tags, or Invoice → Line Items.
 
 **Example:** Edit article tags directly in the article detail view without navigating to a separate page.
 
@@ -566,3 +566,283 @@ Adjust form organization based on object state::
                 )
 
             return fieldsets
+
+Inline Views in Fieldsets
+==========================
+
+Django IS Core allows you to embed related object management directly within a detail form view using inline views in fieldsets. Unlike Django Admin's inline system, IS Core inline views are defined in the ``fieldsets`` configuration using the ``inline_view`` key.
+
+Why Use Inline Views in Fieldsets?
+-----------------------------------
+
+Inline views in fieldsets allow you to:
+
+- Display and edit related objects without leaving the parent object's detail page
+- Mix regular fields with inline views in a single fieldset structure
+- Use both table-based and form-based inline views
+- Apply custom permissions and visibility logic to inline sections
+- Create a seamless user experience for managing one-to-many and many-to-many relationships
+
+Basic Inline View Configuration
+--------------------------------
+
+Inline views are added to fieldsets using the ``inline_view`` key in the fieldset dictionary:
+
+.. code-block:: python
+    :caption: cores/customer/views.py
+
+    from typing import Any
+    from django.utils.translation import gettext_lazy as _l
+    from is_core.generic_views.detail_views import DjangoDetailFormView
+    from is_core.generic_views.inlines import TabularInlineFormView
+
+    class CustomerDetailView(DjangoDetailFormView):
+        form_class = CustomerEditForm
+
+        # Regular fieldsets with fields
+        fieldsets = (
+            (_l('Basic Information'), {
+                'fields': ('first_name', 'last_name', 'email', 'phone'),
+                'class': 'col-lg-6'
+            }),
+            (_l('Account Details'), {
+                'fields': ('is_active', 'created_at', 'points'),
+                'class': 'col-lg-6'
+            }),
+            # Inline view fieldsets
+            (_l('E-mail addresses'), {
+                'inline_view': CustomerEmailTabularInlineFormView
+            }),
+            (_l('Phone numbers'), {
+                'inline_view': CustomerPhoneTabularInlineFormView
+            }),
+            (_l('Addresses'), {
+                'inline_view': CustomerAddressInlineTableView
+            }),
+        )
+
+Types of Inline Views
+----------------------
+
+**TabularInlineFormView - Editable Table:**
+
+.. code-block:: python
+
+    from is_core.generic_views.inlines import TabularInlineFormView
+
+    class CustomerEmailTabularInlineFormView(TabularInlineFormView):
+        model = CustomerEmail
+        form_class = CustomerEmailForm
+        fields = ('email', 'is_verified', 'primary')
+        extra = 1
+        can_delete = True
+
+**DjangoInlineTableView - Read-Only Table:**
+
+.. code-block:: python
+
+    from is_core.generic_views.inlines import DjangoInlineTableView
+
+    class CustomerAddressInlineTableView(DjangoInlineTableView):
+        model = CustomerAddress
+        list_display = ('type', 'street', 'city', 'zip_code', 'country')
+        paginate_by = 10
+
+**StackedInlineFormView - Stacked Forms:**
+
+.. code-block:: python
+
+    from is_core.generic_views.inlines import StackedInlineFormView
+
+    class CustomerBlockingInlineFormView(StackedInlineFormView):
+        model = CustomerBlocking
+        form_class = CustomerBlockingForm
+        fields = ('reason', 'activated_at', 'terminated_at')
+        extra = 0
+        can_delete = False
+
+Dynamic Fieldsets with Inline Views
+------------------------------------
+
+You can generate fieldsets dynamically based on permissions or object state:
+
+.. code-block:: python
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from django.http import HttpRequest
+
+
+    class CustomerDetailView(DjangoDetailFormView):
+        def get_fieldsets(
+            self,
+            request: HttpRequest | None = None,
+            obj: Customer | None = None
+        ) -> tuple[Any, ...]:
+            fieldsets = [
+                (_l('Basic Info'), {'fields': ('first_name', 'last_name')}),
+                (_l('Addresses'), {'inline_view': CustomerAddressInlineTableView}),
+            ]
+
+            # Add bank accounts inline only if customer is verified
+            if obj and obj.is_verified:
+                fieldsets.append(
+                    (_l('Bank accounts'), {'inline_view': CustomerBankAccountInlineTableView})
+                )
+
+            # Add admin-only inline views
+            if request and request.user.has_perm('customers.view_blocking'):
+                fieldsets.append(
+                    (_l('Blocking History'), {'inline_view': CustomerBlockingInlineFormView})
+                )
+
+            return tuple(fieldsets)
+
+Using fieldsets_postfix
+------------------------
+
+For views that extend other view classes, use ``fieldsets_postfix`` to append inline views without overriding the parent's fieldsets:
+
+.. code-block:: python
+
+    from user_comments.contrib.is_core.cores import CommentCoreMixin
+
+    class CustomerDetailView(CommentCoreMixin, DjangoDetailFormView):
+        # Standard fields configuration
+        fields = ('first_name', 'last_name', 'email', 'phone')
+
+        # Append inline views after parent fieldsets
+        fieldsets_postfix = CommentCoreMixin.notes_fieldset + (
+            (_l('Addresses'), {'inline_view': CustomerAddressInlineTableView}),
+            (_l('Bank accounts'), {'inline_view': CustomerBankAccountInlineTableView}),
+            (_l('E-mail addresses'), {'inline_view': CustomerEmailTabularInlineFormView}),
+        )
+
+This pattern is useful when:
+
+- You're extending a mixin that provides its own fieldsets
+- You want to add inline views without duplicating parent configuration
+- You need to maintain a consistent order of fieldsets across multiple views
+
+Inline Views for Nested Resources
+----------------------------------
+
+Inline views can display resources nested under the parent object:
+
+.. code-block:: python
+
+    class CustomerCommentTableView(DjangoDetailFormView):
+        """Dedicated view for customer comments using only an inline view."""
+
+        def get_fieldsets(self) -> tuple[Any, ...]:
+            return (
+                (_l('Comments'), {'inline_view': CustomerCommentInlineView}),
+            )
+
+
+    class CustomerCommentInlineView(DjangoInlineTableView):
+        model = Comment
+        list_display = ('author', 'created_at', 'content_type_link', 'comment')
+
+        def get_queryset(self) -> QuerySet[Comment]:
+            customer_pk = self.request.kwargs.get('customer_pk')
+            # Filter comments related to this customer
+            return Comment.objects.filter(
+                content_type=ContentType.objects.get_for_model(Customer),
+                object_pk=str(customer_pk)
+            )
+
+Combining Multiple Inline Types
+--------------------------------
+
+You can mix different inline view types in a single detail view:
+
+.. code-block:: python
+
+    class CustomerDetailView(DjangoDetailFormView):
+        fieldsets = (
+            # Regular fields
+            (_l('Personal Information'), {
+                'fields': ('first_name', 'last_name', 'birth_date'),
+                'class': 'col-lg-6'
+            }),
+
+            # Editable inline form (TabularInlineFormView)
+            (_l('E-mail addresses'), {
+                'inline_view': CustomerEmailTabularInlineFormView
+            }),
+
+            # Read-only inline table (DjangoInlineTableView)
+            (_l('Order History'), {
+                'inline_view': CustomerOrdersInlineTableView
+            }),
+
+            # Stacked inline form (StackedInlineFormView)
+            (_l('Blocking Details'), {
+                'inline_view': CustomerBlockingInlineFormView
+            }),
+        )
+
+Inline View Permissions
+------------------------
+
+Control inline view visibility using permissions:
+
+.. code-block:: python
+
+    class CustomerDocumentsInlineTableView(DjangoInlineTableView):
+        model = Document
+
+        def has_get_permission(self, **kwargs) -> bool:
+            """Only show documents to users with view permission."""
+            return self.request.user.has_perm('documents.view_document')
+
+
+    class CustomerDetailView(DjangoDetailFormView):
+        def get_fieldsets(self, request=None, obj=None):
+            fieldsets = [
+                (_l('Basic Info'), {'fields': ('first_name', 'last_name')}),
+            ]
+
+            # Conditionally add inline based on permission check
+            inline_view_class = CustomerDocumentsInlineTableView
+            # Check if the inline view's permission method would pass
+            temp_view = inline_view_class()
+            temp_view.request = request
+
+            if temp_view.has_get_permission():
+                fieldsets.append(
+                    (_l('Documents'), {'inline_view': CustomerDocumentsInlineTableView})
+                )
+
+            return tuple(fieldsets)
+
+Styling Inline Views
+---------------------
+
+Control the appearance of inline view sections using CSS classes:
+
+.. code-block:: python
+
+    class CustomerDetailView(DjangoDetailFormView):
+        fieldsets = (
+            # Full-width inline
+            (_l('Addresses'), {
+                'inline_view': CustomerAddressInlineTableView,
+                'class': 'col-12'
+            }),
+
+            # Half-width inline (side-by-side with other fieldset)
+            (_l('E-mails'), {
+                'inline_view': CustomerEmailTabularInlineFormView,
+                'class': 'col-lg-6'
+            }),
+
+            # Collapsible inline
+            (_l('Advanced Settings'), {
+                'inline_view': CustomerAdvancedSettingsInlineView,
+                'classes': ('collapse',)  # Note: 'classes' not 'class'
+            }),
+        )
+
