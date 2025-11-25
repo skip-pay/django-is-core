@@ -219,7 +219,7 @@ You can use operator joining for using more permission types::
         model = User
         default_permission = IsSuperuser() & IsAdminUser()
 
-For some cases is necessary update permissions in a class mixin for this purpose you can use method ``_init_permission(permission)`::
+For some cases is necessary update permissions in a class mixin for this purpose you can use method ``_init_permission(permission)`` ::
 
     from is_core.auth.permissions import IsSuperuser, IsAdminUser
     from is_core.main import DjangoUiRestCore

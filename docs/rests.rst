@@ -105,6 +105,8 @@ Example::
                 qs = qs.filter(author=request.user)
             return qs
 
+.. _custom_url_patterns:
+
 Generic Resource
 ^^^^^^^^^^^^^^^^
 
