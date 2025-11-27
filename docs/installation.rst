@@ -39,7 +39,7 @@ Alternatively, you can install directly from GitHub:
 
 .. code-block:: console
 
-    $ pip install https://github.com/matllubos/django-is-core/tarball/{{ version }}#egg=django-is-core-{{ version }}
+    $ pip install https://github.com/skippay/django-is-core/tarball/{{ version }}#egg=django-is-core-{{ version }}
 
 Configuration
 =============

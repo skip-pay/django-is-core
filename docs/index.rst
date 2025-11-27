@@ -27,7 +27,7 @@ Key Features
 
 Project Home
 ------------
-https://github.com/matllubos/django-is-core
+https://github.com/skippay/django-is-core
 
 Documentation
 -------------

@@ -40,7 +40,7 @@ The most basic resource class for creating custom REST endpoints.
 
 Example::
 
-    from is_core.rest.resource import BaseResource
+    from pymess.resource import BaseResource
     from is_core.rest.decorators import rest_method
 
     class StatsResource(BaseResource):

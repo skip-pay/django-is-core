@@ -8,7 +8,7 @@ This is the API reference for REST Resource classes in Django IS Core. For conce
 Base Resources
 --------------
 
-.. autoclass:: is_core.rest.resource.CoreResource
+.. autoclass:: pyston.resource.BaseResource
    :members:
    :show-inheritance:
 
@@ -19,7 +19,7 @@ Django Core Resources
    :members:
    :show-inheritance:
 
-.. autoclass:: is_core.rest.resource.SmartFormDjangoResource
+.. autoclass:: pyston.resource.DjangoResource
    :members:
    :show-inheritance:
 
