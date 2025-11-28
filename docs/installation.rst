@@ -29,18 +29,17 @@ All optional libraries are not installed automatically. Other libraries are depe
 Using Pip
 ---------
 
-Django is core is not currently inside *PyPE* but in the future you will be able to use:
+Django IS Core is available on PyPI:
 
 .. code-block:: console
 
-    $ pip install django-is-core
+    $ pip install skip-django-is-core
 
-
-Because *django-is-core* is rapidly evolving framework the best way how to install it is use source from github
+Alternatively, you can install directly from GitHub:
 
 .. code-block:: console
 
-    $ pip install https://github.com/matllubos/django-is-core/tarball/{{ version }}#egg=django-is-core-{{ version }}
+    $ pip install https://github.com/skippay/django-is-core/tarball/{{ version }}#egg=django-is-core-{{ version }}
 
 Configuration
 =============
@@ -65,23 +64,33 @@ For using is-core you just add add ``is_core``, ``pyston`` and ``block_snippets`
         ...
     )
 
-``MIDDLEWARE_CLASSES``
-^^^^^^^^^^^^^^^^^^^^^^
+``MIDDLEWARE``
+^^^^^^^^^^^^^^
 
-Next add two middlewares to end of ``MIDDLEWARE_CLASSES`` variable::
+Next add two middlewares to the end of the ``MIDDLEWARE`` list::
 
-    MIDDLEWARE_CLASSES = (
+    MIDDLEWARE = [
         ...
         'is_core.middleware.RequestKwargsMiddleware',
         'is_core.middleware.HttpExceptionsMiddleware',
-    )
+    ]
+
+.. note::
+   For Django versions prior to 1.10, use ``MIDDLEWARE_CLASSES`` instead of ``MIDDLEWARE``.
 
 Setup
 =====
+
 To finally setup the application please follow these steps:
 
-1. Collect static files from django-is-core with command ``python manage.py collectstatic``
+1. Collect static files from Django IS Core with command ``python manage.py collectstatic``
 2. Sync database with command ``python manage.py migrate``
+
+.. note::
+   After installation, you can access the admin interface at ``http://localhost:8000/`` (or your configured URL prefix).
+
+.. tip::
+   Run ``python manage.py createsuperuser`` to create your first admin user if you haven't already.
 
 
 Settings
@@ -210,6 +219,8 @@ These configuration you can use with django-is-core in your django settings file
 
     # Django settings
     IS_CORE_BACKGROUND_EXPORT_TASK_CALLBACK = 'your.file.perform_action_before_export_task'
+
+.. code-block:: python
 
     # your/file.py
     def perform_action_before_export_task(request, queryset, filename, **kwargs):

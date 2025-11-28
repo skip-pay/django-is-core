@@ -1,3 +1,4 @@
+.. _cores:
 
 Cores
 =====
@@ -221,6 +222,20 @@ Method ``per_save_model`` is called before saving object to database. Body is em
 
 Method ``post_save_model`` is called after saving object to database. Body is empty by default.
 
+**Example: Additional Processing After Save**
+
+Perform additional processing after an object is successfully saved::
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        def post_save_model(self, request, obj, form, change):
+            super().post_save_model(request, obj, form, change)
+
+            # Trigger communication for newly registered customers
+            if not change:  # Only for new customers
+                trigger_customer_registered_communication(obj)
+
 .. method:: DjangoCore.save_model(request, obj, form, change)
 
 You can rewrite this method if you want to change way how is object saved to database. Default body is::
@@ -268,9 +283,31 @@ permissions.
 The related objects of queryset should sometimes very slow down retrieving data from the database. If you want to
 improve a speed of your application use this function to create preloading of related objects.
 
+.. _list_actions:
+
 .. method:: DjangoCore.get_list_actions(request, obj)
 
 Use this method if you want to change ``list_actions`` dynamically.
+
+**Example: Dynamic Actions Based on State**
+
+Add actions that depend on object state::
+
+    class ArticleCore(DjangoUiRestCore):
+        model = Article
+
+        def get_list_actions(self, request, obj):
+            actions = super().get_list_actions(request, obj)
+
+            # Add publish action only for draft articles
+            if obj.status == 'draft':
+                actions.append({
+                    'url': self.get_rest_url('publish', pk=obj.pk),
+                    'verbose_name': _('Publish'),
+                    'action': 'publish',
+                })
+
+            return actions
 
 
 .. method:: DjangoCore.get_default_action(request, obj)
@@ -296,6 +333,21 @@ Every UI core has one place inside menu that addresses one of UI views of a core
 Option `show_in_menu` is set to ``True`` by default. If you want to remove core view from menu set this option to
 ``False``.
 
+**Example Usage**
+
+Hide utility cores from the main navigation::
+
+    class CustomerImportCore(DjangoUiRestCore):
+        """Internal core for CSV import - not shown in menu"""
+        model = Customer
+        show_in_menu = False  # Hidden from navigation
+        menu_url_name = None  # No menu link
+
+    class CustomerAuditLogCore(DjangoRestCore):
+        """API-only core for audit logs"""
+        model = CustomerAuditLog
+        show_in_menu = False  # REST-only, no UI
+
 .. attribute:: UiCore.view_classes
 
 Option contains view classes that are automatically added to Django urls. Use this option to add new views. Example
@@ -316,12 +368,42 @@ you can see in section generic views (this is a declarative way if you want to r
             ('reports', r'^/reports/$', MonthReportView),
         )
 
+**Complex Example**
+
+Register multiple custom views with specific permissions::
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        view_classes = (
+            # Custom detail view with tabs
+            ('change', r'^/(?P<pk>[^/]+)/$', CustomerDetailView, False, False),
+
+            # Related object management
+            ('add-address', r'^/(?P<customer_pk>[^/]+)/address/add/$', AddressAddView, False, True),
+            ('edit-address', r'^/(?P<customer_pk>[^/]+)/address/(?P<pk>[^/]+)/$', AddressDetailView, False, False),
+
+            # Custom actions with parent scoping
+            ('activate', r'^/(?P<pk>[^/]+)/activate/$', CustomerActivateView, False, False),
+            ('deactivate', r'^/(?P<pk>[^/]+)/deactivate/$', CustomerDeactivateView, False, False),
+
+            # Bulk operations
+            ('bulk-export', r'^/bulk-export/$', CustomerBulkExportView, False, False),
+        )
+
+The tuple format is: ``(url_name_suffix, url_pattern, view_class, can_create, can_delete)``
+
+- ``url_name_suffix``: Suffix added to core's base URL name
+- ``url_pattern``: Regular expression for URL matching
+- ``view_class``: The view class to use
+- ``can_create``: Boolean indicating if this view can create objects (default: False)
+- ``can_delete``: Boolean indicating if this view can delete objects (default: False)
+
 .. attribute:: UiCore.default_ui_pattern_class
 
 Every view must have assigned is-core pattern class. This pattern is not the same patter that is used with **django**
 `urls`. This pattern has higher usability. You can use it to generate the url string or checking permissions. Option
-default_ui_pattern_class contains pattern class that is used with defined view classes. More about patterns you can
-find in section patterns. #TODO add link
+default_ui_pattern_class contains pattern class that is used with defined view classes.
 
 Methods
 ^^^^^^^
@@ -395,12 +477,12 @@ Options
 .. attribute:: RestCore.rest_classes
 
 Option contains REST classes that are automatically added to django urls. Use this option to add new REST resources.
-Example you can see in section REST. #TODO add link
+See :ref:`rests` for detailed examples.
 
 .. attribute:: RestCore.default_rest_pattern_class
 
 As UI views every resource must have assigned is-core pattern class. Default pattern for REST resources is
-`RestPattern`. More about patterns you can find in section patterns. #TODO add link
+``RestPattern``.
 
 Methods
 ^^^^^^^
@@ -418,18 +500,74 @@ Use this method if you want to change ``rest_classes`` dynamically.
 
 Contains code that generates ``rest_patterns`` from rest classes. Method returns an ordered dict of pattern classes.
 
+**Example: Custom REST Endpoints**
+
+Add custom REST endpoints alongside standard CRUD operations::
+
+    from django.conf.urls import patterns, url
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        def get_rest_patterns(self):
+            # Get default patterns (list, detail, create, update, delete)
+            rest_patterns = super().get_rest_patterns()
+
+            # Add custom action endpoints
+            rest_patterns.update({
+                'activate': (
+                    r'^/(?P<pk>[^/]+)/activate/$',
+                    self.resource_class,
+                    {'allowed_methods': ('post',)}
+                ),
+                'deactivate': (
+                    r'^/(?P<pk>[^/]+)/deactivate/$',
+                    self.resource_class,
+                    {'allowed_methods': ('post',)}
+                ),
+                'bulk-export': (
+                    r'^/bulk-export/$',
+                    self.resource_class,
+                    {'allowed_methods': ('post',)}
+                ),
+                'stats': (
+                    r'^/stats/$',
+                    CustomerStatsResource,
+                    {'allowed_methods': ('get',)}
+                ),
+            })
+
+            return rest_patterns
+
+This creates additional REST endpoints:
+
+- ``POST /api/customer/{pk}/activate/`` - Activate customer
+- ``POST /api/customer/{pk}/deactivate/`` - Deactivate customer
+- ``POST /api/customer/bulk-export/`` - Export multiple customers
+- ``GET /api/customer/stats/`` - Get customer statistics
+
 HomeUiCore
 ------------
 
 ``HomeCore`` contains only one UI view which is index page. By default this page is empty and contains only menu
-because every information system has custom index. You can very simply change default view class by changing ``settings``
-attribute ``HOME_VIEW``, the default value is::
+because every information system has custom index.
 
-    HOME_VIEW = 'is_core.generic_views.HomeView'
+Customizing Home
+^^^^^^^^^^^^^^^^
 
-You can change whole is core too by attribute ``HOME_IS_CORE``, default value::
+Configure a custom home view and/or core via Django settings::
 
-    HOME_IS_CORE = 'is_core.main.HomeUiCore'
+    # settings.py
+    IS_CORE_HOME_VIEW = 'myapp.views.CustomHomeView'
+    IS_CORE_HOME_CORE = 'myapp.cores.CustomHomeCore'
+
+Default values::
+
+    IS_CORE_HOME_VIEW = 'is_core.generic_views.HomeView'
+    IS_CORE_HOME_CORE = 'is_core.main.HomeUiCore'
+
+.. note::
+   The default home is a UI Core without REST. If your home needs REST functionality, specify a combined core like ``DjangoUiRestCore``.
 
 
 DjangoUiCore
@@ -514,7 +652,7 @@ The result of form field labels will be:
 * 'leading_issue__name' => 'leading issues changed label - {generated value}'
 * 'solving_issue__name' => 'solving issue name label'
 * 'watching_issues' => 'watching issues changed label'
-* 'leading_issue' => '{generated value}'  # because overriden was value leading_issue__
+* 'leading_issue' => '{generated value}'  # because overriden was value leading_issue\_\_
 
 If you want to remove some label generated from relation prefix, you can use ``None`` as field label value::
 
@@ -581,8 +719,7 @@ Now we want to add inline form view of all reported issues to user **add** and *
     class UiRestUserCore(UIRestCore):
         form_inline_views = (ReportedIssuesInlineView,)
 
-The ``fk_name`` is not required if there is only one relation between ``User`` and ``Issue``. More about inline views you
-can find in generic views section # TODO add link.
+The ``fk_name`` is not required if there is only one relation between ``User`` and ``Issue``. More about inline views in :ref:`views`.
 
 .. attribute:: DjangoUiCore.fieldsets
 
@@ -675,14 +812,14 @@ Use this method if you want to change ``form_inline_views`` dynamically.
 
 Use this method if you want to change ``default_list_filter`` dynamically.
 
-.. method:: UiCore.get_list_display(request)
+.. method:: UiCore.get_list_fields(request)
 
-Use this method if you want to change ``list_display`` dynamically.
+Use this method if you want to change ``list_fields`` dynamically.
 
-.. method:: UiCore.get_export_display(request)
+.. method:: UiCore.get_export_fields(request)
 
-Method returns ``export_display`` if no export_display is set the output is result of method
-``get_list_display(request)``.
+Method returns ``export_fields`` if no export_fields is set the output is result of method
+``get_list_fields(request)``.
 
 .. method:: UiCore.get_export_types(request)
 
@@ -713,27 +850,74 @@ Options
 
 Set ``rest_detailed_fields`` if you want to define fields that will be returned inside REST response for a request on
 concrete object (an URL contains an ID of a concrete model object. For example an URL of a request is ``/api/user/1/``).
-This option rewrites settings inside ``RESTMeta`` (you can find more about it at section #TODO add link).
 
 .. attribute:: DjangoRestCore.rest_general_fields
 
 Set ``rest_general_fields`` if you want to define fields that will be returned inside REST response for a request on
 more than one object (an URL does not contain an ID of a concrete objects, eq. ``/api/user/``). This defined set of
-fields is used for generating result of a foreign key object. This option rewrites settings inside ``RESTMeta``
-(you can find more about it at section #TODO add link).
+fields is used for generating result of a foreign key object.
 
 .. attribute:: DjangoRestCore.rest_extra_fields
 
 Use ``rest_extra_fields`` to define extra fields that is not returned by default, but can be extra requested
-by a HTTP header ``X-Fields`` or a GET parameter ``_fields``. More info you can find in **django-piston** library
-documentation. This option rewrites settings inside ``RESTMeta`` (you can find more about it at section #TODO add link).
+by a HTTP header ``X-Fields`` or a GET parameter ``_fields``. See the django-pyston library documentation for more details.
+
+**Example: API-Only Fields**
+
+Expose computed or aggregated data via REST API without including it in default responses.
+
+Define the fields in your Core::
+
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+
+        # Fields only available when explicitly requested via API
+        rest_extra_fields = (
+            'coin_balance',           # Computed field
+            'applied_promocodes_id',  # Filterable field
+        )
+
+        # Allow filtering by extra fields in REST API
+        rest_extra_filter_fields = (
+            'applied_promocodes_id',
+        )
+
+Then define the computed fields in your Resource::
+
+    from is_core.utils.decorators import short_description
+    from pyston.utils.decorators import filter_class
+
+    class CustomerResource(DjangoCoreResource):
+        model = Customer
+
+        @short_description(_('Coin Balance'))
+        def coin_balance(self, obj):
+            return CoinTransaction.objects.compute_balance_for_customer(obj)
+
+        # For filterable extra fields, use @filter_class decorator
+        # The property returns None because the @filter_class decorator
+        # intercepts filtering logic - the return value is not used
+        @filter_class(AppliedPromocodeIDFilter)
+        @property
+        def applied_promocodes_id(self):
+            return None
+
+Usage example::
+
+    # Default API call - excludes extra fields
+    GET /api/customers/?limit=20
+
+    # Request with extra fields
+    GET /api/customers/?_fields=id,name,coin_balance,applied_promocodes_id
+
+    # Filter by extra field (requires @filter_class decorator)
+    GET /api/customers/?applied_promocodes_id__icontains=PROMO123
 
 .. attribute:: DjangoRestCore.rest_default_guest_fields
 
 ``rest_guest_fields`` contains list of fields that can be seen by user that has not permission to see the whole
 object data. In case that a user has permission to see an object that is related with other object that can not be
-seen. In this situation is returned only fields defined inside ``rest_guest_fields``. This option rewrites settings
-inside ``RESTMeta`` (you can find more about it at section #TODO add link).
+seen. In this situation is returned only fields defined inside ``rest_guest_fields``.
 
 .. attribute:: DjangoRestCore.rest_default_detailed_fields
 
@@ -748,11 +932,6 @@ settings inside ``RESTMeta`` but the result fields is intersection of ``RESTMeta
 .. attribute:: DjangoRestCore.rest_default_extra_fields
 
 The purpose of ``rest_default_extra_fields`` is the same as ``rest_extra_fields`` but this option does not rewrite
-settings inside ``RESTMeta`` but the result fields is intersection of ``RESTMeta`` options and this option.
-
-.. attribute:: DjangoRestCore.rest_default_guest_fields
-
-The purpose of ``rest_default_guest_fields`` is the same as ``rest_guest_fields`` but this option does not rewrite
 settings inside ``RESTMeta`` but the result fields is intersection of ``RESTMeta`` options and this option.
 
 .. attribute:: DjangoRestCore.rest_allowed_methods
@@ -774,3 +953,168 @@ The atribute inside response has named ``_class_names``.
 .. attribute:: DjangoRestCore.rest_resource_class
 
 A default resource class is ``RESTModelResource``. You can change it with this attribute.
+
+Custom URL Patterns for Nested Resources
+=========================================
+
+Django IS Core allows you to register nested resources (e.g., ``/customer/{id}/devices/``) in **separate, independent cores** rather than defining them as inlines within the parent core. This is accomplished through custom URL patterns.
+
+Separate Core Registration
+---------------------------
+
+Unlike Django Admin where related objects must be defined as inlines within the parent ModelAdmin, Django IS Core allows you to:
+
+**✅ Register a separate core for the nested resource:**
+
+.. code-block:: python
+
+    # cores/customer/__init__.py - Parent core
+    class CustomerCore(DjangoUiRestCore):
+        model = Customer
+        list_fields = ('id', 'name', 'email')
+        # No need to define devices here!
+
+    # cores/customer/device.py - Separate core for nested resource
+    class CustomerMobileDeviceCore(DjangoUiRestCore):
+        model = MobileDevice
+        list_fields = ('id', 'name', 'is_active')
+        # This is its own independent core with full functionality
+
+This separation provides loose coupling between parent and child resources:
+
+- Each resource has its own file, views, forms, permissions
+- The device core has its own REST API, list views, filters
+- The same device core can be used in different contexts
+- Changes to device logic don't affect customer core
+- Nested resources get all core features (export, permissions, actions)
+
+Custom patterns enable this by solving the URL routing problem:
+
+- **URL construction**: Generate URLs like ``/customer/123/devices/456/`` from a device object
+- **Parameter extraction**: Extract ``customer_pk`` from URLs for filtering
+- **Link generation**: Create correct links in list views and forms
+- **Breadcrumb navigation**: Maintain proper parent-child relationships in UI
+
+Without custom patterns, you'd need to either:
+
+1. Put everything in the parent core (tight coupling)
+2. Use flat URLs like ``/devices/456/`` (losing parent context) or restructured URLs like ``/devices/customer/123/`` (works, but custom patterns help organize resources more naturally around their parent)
+3. Write complex custom URL resolution logic everywhere (not DRY)
+
+Basic Pattern Customization
+----------------------------
+
+Here's how to create custom pattern classes for a nested resource:
+
+.. code-block:: python
+    :caption: cores/customer/patterns.py
+
+    from typing import Any
+    from django.core.handlers.wsgi import WSGIRequest
+    from is_core.patterns import RestPattern, UiPattern
+
+    class CustomerPattern:
+        """Base mixin for customer-scoped patterns."""
+
+        def _get_customer_from_obj(self, obj) -> int:
+            """Extract customer ID from the object."""
+            return obj.customer_id
+
+        def _get_try_kwargs(self, request: WSGIRequest, obj) -> dict[str, Any]:
+            """Override to inject customer_pk into URL kwargs."""
+            kwargs = super()._get_try_kwargs(request, obj)
+            regex = r"(?P<customer_pk>[-\d]+)"
+
+            if regex in self.url_prefix or regex in self.url_pattern:
+                kwargs["customer_pk"] = (
+                    self._get_customer_from_obj(obj)
+                    if obj
+                    else request.kwargs.get("customer_pk")
+                )
+            return kwargs
+
+
+    class CustomerRestPattern(CustomerPattern, RestPattern):
+        """REST pattern for customer-scoped resources."""
+        pass
+
+
+    class CustomerUiPattern(CustomerPattern, UiPattern):
+        """UI pattern for customer-scoped resources."""
+        pass
+
+Using Custom Patterns in Cores
+-------------------------------
+
+Apply your custom patterns to a core using ``default_rest_pattern_class`` and ``default_ui_pattern_class``:
+
+.. code-block:: python
+    :caption: cores/customer/device.py
+
+    from typing import TYPE_CHECKING
+    from django.shortcuts import resolve_url
+    from is_core.main import DjangoUiRestCore
+    from .patterns import CustomerRestPattern, CustomerUiPattern
+
+    if TYPE_CHECKING:
+        from django.core.handlers.wsgi import WSGIRequest
+        from django.db.models import QuerySet
+
+
+    class CustomerMobileDeviceCore(DjangoUiRestCore):
+        model = MobileDevice
+
+        # Use custom patterns for URL generation
+        default_rest_pattern_class = CustomerRestPattern
+        default_ui_pattern_class = CustomerUiPattern
+
+        list_fields = ('id', 'name', 'created_at', 'is_active')
+
+        def get_queryset(self, request: WSGIRequest) -> QuerySet:
+            """Filter devices by customer from URL."""
+            return super().get_queryset(request).filter(
+                user_id=request.kwargs.get('customer_pk')
+            )
+
+        def get_url_prefix(self) -> str:
+            """Define nested URL structure."""
+            return r"customer/(?P<customer_pk>[-\d]+)/{}".format(
+                "/".join(self.get_menu_groups())
+            )
+
+        def get_api_url(self, request: WSGIRequest) -> str:
+            """Generate list API URL with customer_pk."""
+            return resolve_url(
+                self.get_api_url_name(),
+                customer_pk=request.kwargs.get('customer_pk')
+            )
+
+        def get_api_detail_url(self, request: WSGIRequest, obj) -> str:
+            """Generate detail API URL with customer_pk and object pk."""
+            return resolve_url(
+                self.get_api_detail_url_name(),
+                customer_pk=request.kwargs.get('customer_pk'),
+                pk=obj.pk
+            )
+
+Advanced Pattern: Different Attribute Names
+--------------------------------------------
+
+Sometimes the parent relationship uses a different attribute name. You can override ``_get_customer_from_obj``:
+
+.. code-block:: python
+
+    class CustomerMobileDevicePattern(CustomerPattern):
+        """Pattern for mobile devices which use user_id instead of customer_id."""
+
+        def _get_customer_from_obj(self, obj) -> int:
+            return obj.user_id  # Different attribute name
+
+
+    class CustomerMobileDeviceRestPattern(CustomerMobileDevicePattern, RestPattern):
+        pass
+
+
+    class CustomerMobileDeviceUiPattern(CustomerMobileDevicePattern, UiPattern):
+        pass
+

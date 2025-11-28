@@ -33,8 +33,107 @@ Docs
 For more details see [docs](http://django-is-core.readthedocs.org/)
 
 
+Development Setup
+-----------------
+
+All development (running tests, building docs, etc.) is done through the **example application**. The example app's virtual environment includes django-is-core installed in editable mode along with all required dependencies.
+
+### Prerequisites
+
+- Python 3
+- `virtualenv` command available
+- Docker (for running required services)
+
+### Setting Up the Development Environment
+
+1. Navigate to the example directory:
+   ```bash
+   cd example
+   ```
+
+2. Start the required Docker services (Elasticsearch and DynamoDB):
+   ```bash
+   make runservices
+   ```
+
+3. Install and set up the application:
+   ```bash
+   make install
+   ```
+
+   This will:
+   - Create a virtual environment at `example/var/ve`
+   - Install django-is-core in editable mode (from the parent directory)
+   - Install all dependencies (Django, test tools, etc.)
+   - Initialize the database
+   - Set up logging directories
+
+4. Activate the virtual environment:
+   ```bash
+   source var/ve/bin/activate
+   ```
+
+### Running Tests
+
+With the virtual environment activated:
+
+```bash
+cd example
+make test
+```
+
+### Running the Example Application
+
+```bash
+cd example
+make runserver
+```
+
+The application will be available at http://localhost:8080
+
+### Stopping Services
+
+When done, stop the Docker services:
+
+```bash
+make stopservices
+```
+
+### Other Useful Commands
+
+From the `example` directory:
+
+```bash
+make clean          # Remove Python bytecode files
+make resetdb        # Reset the database
+make showurls       # Display all registered URLs
+```
+
+Building Documentation
+----------------------
+
+Documentation requires the example app's virtual environment since it uses autodoc to generate API documentation from the django-is-core source code.
+
+1. First, set up the development environment (see above)
+
+2. Install documentation dependencies:
+   ```bash
+   source example/var/ve/bin/activate
+   pip install sphinx sphinx_rtd_theme
+   ```
+
+3. Build the HTML documentation:
+   ```bash
+   cd docs
+   make html
+   ```
+
+4. View the documentation by opening `docs/.build/html/index.html` in your browser, or serve it locally:
+   ```bash
+   python -m http.server 8000 --directory .build/html
+   ```
+   Then visit http://localhost:8000
+
+
 Contribution
 ------------
-
-To run Livereload for Sphinx you need [livereload](https://pypi.python.org/pypi/livereload) `pip install livereload`.
-After installing simply call `make htmllivereload` and open [http://localhost:5500/](http://localhost:5500/).
