@@ -21,12 +21,16 @@
             {% block form-block %}
               {% form_renderer form template="is_core/forms/login_form.html" class_attr='login-form' id_attr='login-form' %}
               {% if sso_login_methods %}
+              <div class="row">
                 <div class="col-md-12 text-center" style="padding: 5px">{% trans "OR" %}</div>
                 {% for sso_method in sso_login_methods %}
-                  <button class="btn btn-block" onclick="location.href='{{ sso_method.url }}'">
-                    <i class="fab fa-{{ sso_method.name }}"></i> {{ sso_method.label }}
-                  </button>
+                <div class="col-md-12" style="padding-left:0; padding-right:0;">
+                  <a href="{{ sso_method.url }}" class="btn btn-block btn-default" role="button">
+                      <i class="fab fa-{{ sso_method.name }}"></i> {{ sso_method.label }}
+                  </a>
+                </div>
                 {% endfor %}
+              </div>
               {% endif %}
               {% block below-login-form %}{% endblock %}
             {% endblock %}
