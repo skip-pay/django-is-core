@@ -9,6 +9,7 @@
   <div class="container login">
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
+        {% block above-login-form %}{% endblock %}
         <div class="login-panel panel panel-default">
           <div class="panel-heading">
             <h3 class="panel-title">{% block form-title %}{% trans 'Please Sign In' %}{% endblock %}</h3>
