@@ -33,7 +33,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
     ],
     install_requires=[
-        'django>=4.2',
+        'django>=4.2,<6',
         'import_string>=0.1.0',
         'skip-django-block-snippets>=2.1.0',
         'skip-django-chamber>=0.7.2',
