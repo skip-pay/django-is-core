@@ -4,8 +4,8 @@ import itertools
 from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.forms import models
-from django.forms.fields import ChoiceField
 from django.forms.models import ModelForm, _get_foreign_key, BaseModelFormSet
+from django.utils.choices import normalize_choices
 
 from pyston.forms import RestModelForm, RestFormMetaclass
 
@@ -89,16 +89,22 @@ class ModelChoiceFieldMixin:
 
     def __init__(self, queryset, *args, **kwargs):
         self.model = queryset.model
-        super(ModelChoiceFieldMixin, self).__init__(queryset, *args, **kwargs)
+        super().__init__(queryset, *args, **kwargs)
 
-    def _get_choices(self):
+    @property
+    def choices(self):
         if hasattr(self, '_choices'):
             return self._choices
         return ModelChoiceIterator(self)
-    choices = property(_get_choices, ChoiceField._set_choices)
+
+    @choices.setter
+    def choices(self, value):
+        # Setting choices on the field also sets the choices on the widget.
+        # Note that the property setter for the widget will re-normalize.
+        self._choices = self.widget.choices = normalize_choices(value)
 
     def widget_attrs(self, widget):
-        attrs = super(ModelChoiceFieldMixin, self).widget_attrs(widget)
+        attrs = super().widget_attrs(widget)
         options = self.model._meta
         attrs['data-model'] = '%s.%s' % (options.app_label, options.object_name)
         return attrs
