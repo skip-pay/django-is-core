@@ -91,7 +91,7 @@ class RelatedUIFilter(UIFilterMixin):
         :return: updated widget with filter choices
         """
 
-        widget.choices = FilterChoiceIterator(widget.choices, self.field)
+        widget._choices = FilterChoiceIterator(widget.choices, self.field)
         return widget
 
     def get_operator(self, widget):

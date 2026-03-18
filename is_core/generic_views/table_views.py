@@ -267,7 +267,7 @@ class DjangoTableViewMixin(BaseModelTableViewMixin):
         if formfield:
             widget = formfield.widget
             if hasattr(widget, 'choices'):
-                widget.choices = FilterChoiceIterator(widget.choices, field)
+                widget._choices = FilterChoiceIterator(widget.choices, field)
 
             if not isinstance(widget, forms.widgets.Textarea):
                 return widget
