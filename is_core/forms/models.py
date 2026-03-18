@@ -5,7 +5,6 @@ from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.forms import models
 from django.forms.models import ModelForm, _get_foreign_key, BaseModelFormSet
-from django.utils.choices import normalize_choices
 
 from pyston.forms import RestModelForm, RestFormMetaclass
 
@@ -99,9 +98,8 @@ class ModelChoiceFieldMixin:
 
     @choices.setter
     def choices(self, value):
-        # Setting choices on the field also sets the choices on the widget.
-        # Note that the property setter for the widget will re-normalize.
-        self._choices = self.widget.choices = normalize_choices(value)
+        self._choices = value
+        self.widget._choices = value
 
     def widget_attrs(self, widget):
         attrs = super().widget_attrs(widget)
