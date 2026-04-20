@@ -151,6 +151,7 @@ class ModelCore(GetMethodFieldMixin, Core):
     default_ordering = None
 
     field_labels = {}
+    field_help_texts = {}
 
     can_read = True
     can_create = False
@@ -164,6 +165,9 @@ class ModelCore(GetMethodFieldMixin, Core):
 
     def get_field_labels(self, request):
         return self.field_labels
+
+    def get_field_help_texts(self, request):
+        return self.field_help_texts
 
     def get_default_ordering(self):
         return self.default_ordering

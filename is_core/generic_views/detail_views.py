@@ -117,6 +117,7 @@ class ModelReadonlyDetailView(GetModelObjectCoreViewMixin, FieldPermissionViewMi
     fields = None
     fieldsets = None
     field_labels = None
+    field_help_texts = None
     view_type = 'readonly-detail'
     detail_verbose_name = None
     inline_views = None
@@ -186,12 +187,20 @@ class ModelReadonlyDetailView(GetModelObjectCoreViewMixin, FieldPermissionViewMi
             self.field_labels if self.field_labels is not None else self.core.get_field_labels(self.request)
         )
 
+    def _get_field_help_texts(self):
+        return (
+            self.field_help_texts if self.field_help_texts is not None
+            else self.core.get_field_help_texts(self.request)
+        )
+
     def _get_field_to_render(self, obj, field_name):
-        value, label, widget = get_readonly_field_data(
-            obj, field_name, self.request, view=self, field_labels=self._get_field_labels()
+        value, label, widget, help_text = get_readonly_field_data(
+            obj, field_name, self.request, view=self,
+            field_labels=self._get_field_labels(),
+            field_help_texts=self._get_field_help_texts(),
         )
         # field name, label, displayed value, class name, help text
-        return field_name, label, display_for_value(value, request=self.request), None, None
+        return field_name, label, display_for_value(value, request=self.request), None, help_text
 
     def _get_fieldset_to_render(self, fieldset_title, fieldset_data, obj):
         fields = [

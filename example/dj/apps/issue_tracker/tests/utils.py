@@ -6,8 +6,9 @@ from germanium.tools import assert_equal, assert_raises, assert_is_none
 
 from is_core.utils import (
     get_field_label_from_path, get_field_from_model_or_none, get_field_widget_from_path,
-    get_readonly_field_value_from_path
+    get_readonly_field_value_from_path, get_field_help_text_from_path, get_readonly_field_data
 )
+from is_core.forms.fields import SmartReadonlyField
 from is_core.forms.utils import ReadonlyValue
 from is_core.utils.field_api import (
     GetFieldDescriptorException, get_field_value_from_path, GetFieldDescriptorValueError,
@@ -74,6 +75,102 @@ class UtilsTestCase(GermaniumTestCase):
 
         with assert_raises(GetFieldDescriptorException):
             get_field_label_from_path(Issue, 'solver__invalid')
+
+    def test_get_field_help_text_from_path_should_return_right_help_text(self):
+        assert_equal(get_field_help_text_from_path(Issue, 'name'), 'Issue name help text')
+        assert_equal(get_field_help_text_from_path(Issue, 'watched_by_string'), 'Watched by string help text')
+        assert_equal(get_field_help_text_from_path(Issue, 'solver'), '')
+        assert_equal(get_field_help_text_from_path(Issue, 'solver__first_name'), '')
+        assert_equal(get_field_help_text_from_path(User, 'created_issues__name'), 'Issue name help text')
+
+    def test_get_field_help_text_from_path_should_support_field_help_texts_override(self):
+        assert_equal(
+            get_field_help_text_from_path(Issue, 'name', field_help_texts={'name': 'custom'}), 'custom'
+        )
+        assert_equal(
+            get_field_help_text_from_path(
+                Issue, 'solver__first_name', field_help_texts={'solver__first_name': 'override'}
+            ),
+            'override'
+        )
+        assert_equal(
+            get_field_help_text_from_path(
+                Issue, 'name', field_help_texts={'name': None}
+            ),
+            ''
+        )
+
+    def test_get_field_help_text_from_path_should_raise_exception_for_invalid_field_name(self):
+        with assert_raises(GetFieldDescriptorException):
+            get_field_help_text_from_path(Issue, 'invalid')
+
+        with assert_raises(GetFieldDescriptorException):
+            get_field_help_text_from_path(Issue, 'solver__invalid')
+
+    def test_get_readonly_field_data_should_return_help_text_as_fourth_element(self):
+        leader = UserFactory()
+        issue = IssueFactory(leader=leader, created_by=leader)
+
+        data = get_readonly_field_data(issue, 'name', request=None)
+        assert_equal(len(data), 4)
+        value, label, widget, help_text = data
+        assert_equal(label, 'Name')
+        assert_equal(help_text, 'Issue name help text')
+
+    def test_get_readonly_field_data_should_return_help_text_for_relation_path(self):
+        solver = UserFactory()
+        leader = UserFactory()
+        issue = IssueFactory(solver=solver, leader=leader, created_by=leader)
+
+        value, label, widget, help_text = get_readonly_field_data(
+            solver, 'solving_issue__name', request=None
+        )
+        assert_equal(help_text, 'Issue name help text')
+
+    def test_get_readonly_field_data_should_support_field_help_texts_override(self):
+        leader = UserFactory()
+        issue = IssueFactory(leader=leader, created_by=leader)
+
+        value, label, widget, help_text = get_readonly_field_data(
+            issue, 'name', request=None, field_help_texts={'name': 'custom help'}
+        )
+        assert_equal(help_text, 'custom help')
+
+    def test_smart_readonly_field_should_set_help_text_from_callback(self):
+        leader = UserFactory()
+        issue = IssueFactory(leader=leader, created_by=leader)
+
+        class _FakeMeta:
+            labels = None
+            help_texts = None
+
+        class _FakeForm:
+            _meta = _FakeMeta()
+            instance = issue
+
+        field = SmartReadonlyField(
+            lambda instance: get_readonly_field_data(instance, 'name', request=None)
+        )
+        field._set_readonly_field('name', _FakeForm())
+        assert_equal(field.help_text, 'Issue name help text')
+
+    def test_smart_readonly_field_should_prefer_help_text_from_form_meta(self):
+        leader = UserFactory()
+        issue = IssueFactory(leader=leader, created_by=leader)
+
+        class _FakeMeta:
+            labels = None
+            help_texts = {'name': 'form meta override'}
+
+        class _FakeForm:
+            _meta = _FakeMeta()
+            instance = issue
+
+        field = SmartReadonlyField(
+            lambda instance: get_readonly_field_data(instance, 'name', request=None)
+        )
+        field._set_readonly_field('name', _FakeForm())
+        assert_equal(field.help_text, 'form meta override')
 
     def test_get_field_from_model_or_none_should_return_model_field(self):
         assert_equal(get_field_from_model_or_none(Issue, 'name'), Issue._meta.get_field('name'))

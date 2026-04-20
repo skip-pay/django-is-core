@@ -10,6 +10,10 @@ ve/
 ###################
 *.pyc
 
+# Python packaging #
+####################
+*.egg-info/
+
 # Cache #
 #########
 .sass-cache/
