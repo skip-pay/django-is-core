@@ -72,6 +72,9 @@ class FieldDescriptor:
     def get_label(self):
         raise NotImplementedError
 
+    def get_help_text(self) -> str:
+        return ''
+
     def get_widget(self):
         return ReadonlyWidget
 
@@ -129,6 +132,9 @@ class DjangoFieldDescriptor(BaseModelFieldDescriptor):
         else:
             return pretty_name(self.field_name)
 
+    def get_help_text(self):
+        return getattr(self.model_field_or_method, 'help_text', '') or ''
+
     def get_widget(self):
         field = self.model_field_or_method
 
@@ -160,6 +166,9 @@ class MethodOrPropertyDescriptor(FieldDescriptor):
 
     def get_label(self):
         return getattr(self.model_field_or_method, 'short_description', pretty_name(self.field_name))
+
+    def get_help_text(self):
+        return getattr(self.model_field_or_method, 'help_text', '') or ''
 
     def _get_field_or_method_value(self, instance, request=None):
         raise NotImplementedError

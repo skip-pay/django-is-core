@@ -280,12 +280,16 @@ class DjangoBaseFormView(FieldPermissionViewMixin, BaseFormView):
     model = None
     exclude = ()
     field_labels = None
+    field_help_texts = None
     inline_views = None
     form_template = 'is_core/forms/model_default_form.html'
     show_buttons = True
 
     def _get_field_labels(self):
         return self.field_labels
+
+    def _get_field_help_texts(self):
+        return self.field_help_texts
 
     def pre_save_obj(self, obj, form, change):
         pass
@@ -393,7 +397,9 @@ class DjangoBaseFormView(FieldPermissionViewMixin, BaseFormView):
     def formfield_for_readonlyfield(self, name, **kwargs):
         def _get_readonly_field_data(instance):
             return get_readonly_field_data(
-                instance, name, self.request, view=self, field_labels=self._get_field_labels()
+                instance, name, self.request, view=self,
+                field_labels=self._get_field_labels(),
+                field_help_texts=self._get_field_help_texts(),
             )
         return SmartReadonlyField(_get_readonly_field_data)
 
@@ -582,6 +588,12 @@ class DjangoCoreFormView(ListParentMixin, DjangoBaseFormView):
 
     def _get_field_labels(self):
         return self.field_labels if self.field_labels is not None else self.core.get_field_labels(self.request)
+
+    def _get_field_help_texts(self):
+        return (
+            self.field_help_texts if self.field_help_texts is not None
+            else self.core.get_field_help_texts(self.request)
+        )
 
     def get_form_class_base(self):
         obj = self.get_obj(True)

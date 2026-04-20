@@ -14,7 +14,7 @@ SETTINGS = settings
 DJANGO_SETTINGS_MODULE = $(DJANGO_DIR).settings.$(SETTINGS)
 DJANGO_POSTFIX = --settings=$(DJANGO_SETTINGS_MODULE) --pythonpath=$(PYTHONPATH)
 PYTHON_BIN = $(VIRTUAL_ENV)/bin
-PYTHON_VERSION_MAJOR = 3
+PYTHON_VERSION_MAJOR = 3.12
 PYTHON = python$(PYTHON_VERSION_MAJOR)
 TYPE = dev
 OS = $(shell uname)
@@ -38,7 +38,6 @@ cleanvar: clean cleanvirtualenv
 cleanall: cleanvar
 
 pip:
-	$(PYTHON_BIN)/pip install --prefer-binary -r requirements/local.txt
 	$(PYTHON_BIN)/pip install --prefer-binary -r requirements/dependency_base.txt
 	$(PYTHON_BIN)/pip install --prefer-binary -r requirements/base.txt
 

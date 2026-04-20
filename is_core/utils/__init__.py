@@ -163,6 +163,25 @@ def get_field_label_from_path(model, field_path, view=None, field_labels=None):
     return ' - '.join([str(label) for label in field_descriptor_labels if label is not None])
 
 
+def get_field_help_text_from_path(model, field_path, view=None, field_help_texts=None):
+    """
+    Return help_text of the last field in the field path. Supports override via field_help_texts dict.
+
+    * field_path='user__email', field_help_texts={} => help_text of `email` field
+    * field_path='user__email', field_help_texts={'user__email': 'override'} => 'override'
+    * field_path='user__email', field_help_texts={'user__email': None} => ''
+    """
+    from .field_api import get_field_descriptors_from_path
+
+    field_help_texts = {} if field_help_texts is None else field_help_texts
+
+    if field_path in field_help_texts:
+        return field_help_texts[field_path] or ''
+
+    field_descriptors = get_field_descriptors_from_path(model, field_path, view)
+    return field_descriptors[-1].get_help_text() or ''
+
+
 def get_field_widget_from_path(model, field_path, view=None):
     """
     Return form widget to show value get from model instance and field_path
@@ -182,22 +201,26 @@ def get_readonly_field_value_from_path(instance, field_path, request=None, view=
     return get_field_value_from_path(instance, field_path, request, view, return_readonly_value=True)
 
 
-def get_readonly_field_data(instance, field_name, request, view=None, field_labels=None):
+def get_readonly_field_data(instance, field_name, request, view=None, field_labels=None,
+                            field_help_texts=None):
     """
-    Returns field humanized value, label and widget which are used to display of instance or view readonly data.
+    Returns field humanized value, label, widget and help_text which are used to display of instance or view
+    readonly data.
     Args:
         field_name: name of the field which will be displayed
         instance: model instance
         view: view instance
         field_labels: dict of field labels which rewrites the generated field label
+        field_help_texts: dict of field help texts which rewrites the generated field help_text
 
     Returns:
-        field humanized value, label and widget which are used to display readonly data
+        field humanized value, label, widget and help_text which are used to display readonly data
     """
     return (
         get_readonly_field_value_from_path(instance, field_name, request, view),
         get_field_label_from_path(instance.__class__, field_name, view, field_labels),
-        get_field_widget_from_path(instance.__class__, field_name, view)
+        get_field_widget_from_path(instance.__class__, field_name, view),
+        get_field_help_text_from_path(instance.__class__, field_name, view, field_help_texts),
     )
 
 

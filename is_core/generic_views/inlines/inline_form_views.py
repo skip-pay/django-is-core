@@ -19,6 +19,7 @@ class InlineFormView(GetMethodFieldMixin, RelatedInlineView):
     exclude = ()
     inline_views = None
     field_labels = None
+    field_help_texts = None
 
     template_name = None
 
@@ -49,6 +50,9 @@ class InlineFormView(GetMethodFieldMixin, RelatedInlineView):
 
     def _get_field_labels(self):
         return self.field_labels
+
+    def _get_field_help_texts(self):
+        return self.field_help_texts
 
     def _is_readonly(self):
         return self.is_readonly or self.parent_view.is_readonly()
@@ -140,7 +144,9 @@ class InlineFormView(GetMethodFieldMixin, RelatedInlineView):
     def formfield_for_readonlyfield(self, name, **kwargs):
         def _get_readonly_field_data(instance):
             return get_readonly_field_data(
-                instance, name, self.request, view=self, field_labels=self._get_field_labels()
+                instance, name, self.request, view=self,
+                field_labels=self._get_field_labels(),
+                field_help_texts=self._get_field_help_texts(),
             )
         return SmartReadonlyField(_get_readonly_field_data)
 

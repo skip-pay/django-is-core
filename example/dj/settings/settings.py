@@ -22,9 +22,9 @@ ELASTICSEARCH_DATABASE = dict(
 
 PYDJAMODB_DATABASE = {
     'HOST': 'http://localhost:8000',
-    'AWS_ACCESS_KEY_ID': '_',
-    'AWS_SECRET_ACCESS_KEY': '_',
-    'AWS_REGION': None,
+    'AWS_ACCESS_KEY_ID': 'dummy',
+    'AWS_SECRET_ACCESS_KEY': 'dummy',
+    'AWS_REGION': 'us-east-1',
     'TABLE_PREFIX': 'pyston',
     'BILLING_MODE': 'PAY_PER_REQUEST',
 }

@@ -13,7 +13,8 @@ class Issue(models.Model):
 
     parent = models.ForeignKey('Issue', verbose_name='Parent', null=True, blank=True,
                                related_name='subissues', on_delete=models.CASCADE)
-    name = models.CharField(verbose_name='Name', max_length=100, null=False, blank=False)
+    name = models.CharField(verbose_name='Name', help_text='Issue name help text',
+                            max_length=100, null=False, blank=False)
     watched_by = models.ManyToManyField(AUTH_USER_MODEL, verbose_name='Watched by', blank=True,
                                         related_name='watching_issues')
     created_by = models.ForeignKey(AUTH_USER_MODEL, verbose_name='Created by', null=False, blank=False,
@@ -34,6 +35,7 @@ class Issue(models.Model):
     def watched_by_string(self):
         return ', '.join(str(user) for user in self.watched_by.all())
     watched_by_string.order_by = 'watched_by'
+    watched_by_string.help_text = 'Watched by string help text'
 
     @property
     @relation(AUTH_USER_MODEL)
