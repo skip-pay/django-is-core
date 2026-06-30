@@ -92,8 +92,13 @@ class CrawlerTestCase:
     def get_users(self):
         raise NotImplementedError
 
-    def get_exlude_urls(self):
+    def get_exclude_urls(self):
         return list(self.exclude_urls) + ['/logout/']
+
+    def get_exlude_urls(self):
+        # Deprecated misspelling kept for backward compatibility; delegates to get_exclude_urls.
+        # test_crawler keeps calling this name so existing overrides of either spelling keep working.
+        return self.get_exclude_urls()
 
     @login(users_generator='get_users')
     def test_crawler(self):
