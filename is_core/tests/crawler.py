@@ -92,7 +92,7 @@ class CrawlerTestCase:
     def get_users(self):
         raise NotImplementedError
 
-    def get_exlude_urls(self):
+    def get_exclude_urls(self):
         return list(self.exclude_urls) + ['/logout/']
 
     @login(users_generator='get_users')
@@ -119,7 +119,7 @@ class CrawlerTestCase:
                                     (url, referer, resp.status_code, self.logged_user.user))
             assert_not_equal(resp.status_code, 500, msg='Response code for url %s from referer %s is 500, user %s' %
                              (url, referer, self.logged_user.user))
-        Crawler(self.c, ('/',), self.get_exlude_urls(), pre_request, post_response,
+        Crawler(self.c, ('/',), self.get_exclude_urls(), pre_request, post_response,
                 extra_link_extractors={'application/json': JSONLinkExtractor(),
                                        'text/plain': TextPlainSnippetsExtractor(),
                                        'text/html': HTMLLinkExtractor()}).run()
