@@ -12,14 +12,8 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.11", "3.12"]
-        django-version: ["Django~=4.2", "Django~=5.2", "Django~=6.0", "Django~=6.1"]
-        exclude:
-          # Django 6.x requires Python >= 3.12
-          - python-version: "3.11"
-            django-version: "Django~=6.0"
-          - python-version: "3.11"
-            django-version: "Django~=6.1"
+        python-version: ["3.14"]
+        django-version: ["Django~=5.2", "Django~=6.0", "Django~=6.1"]
 
     services:
       elasticsearch:

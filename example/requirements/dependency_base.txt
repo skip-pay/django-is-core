@@ -2,3 +2,4 @@ django-class-auth-views==1.0.2
 html5lib==1.1
 python3-openid==3.2.0
 requests>=2.25.1
+legacy-cgi>=2.6.3
