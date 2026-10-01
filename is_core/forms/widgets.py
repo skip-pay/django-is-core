@@ -268,8 +268,7 @@ class ButtonWidget(ReadonlyWidget):
     def _render_readonly(self, name, value, attrs=None, renderer=None, request=None, form=None, initial_value=None):
         final_attrs = self.build_attrs(self.attrs, attrs, name=name)
 
-        return format_html('<button %(attrs)s>%(value)s</button>' %
-                           {'value': value, 'attrs': flatatt(final_attrs)})
+        return format_html('<button{}>{}</button>', flatatt(final_attrs), value)
 
 
 class DivButtonWidget(ReadonlyWidget):
@@ -277,9 +276,9 @@ class DivButtonWidget(ReadonlyWidget):
     def _render_readonly(self, name, value, attrs=None, renderer=None, request=None, form=None, initial_value=None):
         final_attrs = self.build_attrs(self.attrs, attrs)
         class_name = final_attrs.pop('class', '')
-        return format_html('<div class="%(class_name)s btn btn-primary btn-small" '
-                           '%(attrs)s>%(value)s</div>' %
-                           {'class_name': class_name, 'value': value, 'attrs': flatatt(final_attrs)})
+        return format_html(
+            '<div class="{} btn btn-primary btn-small"{}>{}</div>', class_name, flatatt(final_attrs), value
+        )
 
 
 class MultipleTextInput(forms.TextInput):
